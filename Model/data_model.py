@@ -11,6 +11,76 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Controller.db import get_connection
 
 
+def generate_next_product_id(cursor):
+    """
+    Generate next unique product ID in format PR#####
+
+    Args:
+        cursor: MySQL cursor object
+
+    Returns:
+        str: Next product ID (e.g., 'PR00014', 'PR00015', etc.)
+    """
+    # Get current next_product_number from system_settings
+    cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = 'next_product_number'")
+    result = cursor.fetchone()
+
+    if result:
+        next_number = int(result[0])
+    else:
+        # If not found, start from 1
+        next_number = 1
+        cursor.execute(
+            "INSERT INTO system_settings (setting_key, setting_value) VALUES ('next_product_number', '1')"
+        )
+
+    # Format as PR##### (5 digits with leading zeros)
+    product_id = f"PR{next_number:05d}"
+
+    # Update the next_product_number in database
+    cursor.execute(
+        "UPDATE system_settings SET setting_value = %s WHERE setting_key = 'next_product_number'",
+        (next_number + 1,)
+    )
+
+    return product_id
+
+
+def generate_next_order_id(cursor):
+    """
+    Generate next unique order ID in format OR####
+
+    Args:
+        cursor: MySQL cursor object
+
+    Returns:
+        str: Next order ID (e.g., 'OR0007', 'OR0008', etc.)
+    """
+    # Get current next_order_number from system_settings
+    cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = 'next_order_number'")
+    result = cursor.fetchone()
+
+    if result:
+        next_number = int(result[0])
+    else:
+        # If not found, start from 1
+        next_number = 1
+        cursor.execute(
+            "INSERT INTO system_settings (setting_key, setting_value) VALUES ('next_order_number', '1')"
+        )
+
+    # Format as OR#### (4 digits with leading zeros)
+    order_id = f"OR{next_number:04d}"
+
+    # Update the next_order_number in database
+    cursor.execute(
+        "UPDATE system_settings SET setting_value = %s WHERE setting_key = 'next_order_number'",
+        (next_number + 1,)
+    )
+
+    return order_id
+
+
 class DataModel:
     def __init__(self):
         self.users = []
@@ -30,9 +100,12 @@ class DataModel:
             conn = get_connection()
             print("Connected! Fetching users...")
             cur = conn.cursor(dictionary=True)
-            cur.execute("SELECT username, password, role FROM users")
+            cur.execute("SELECT id, username, password, role FROM users")
             rows = cur.fetchall()
             self.users = [User(row['username'], row['password'], row['role']) for row in rows]
+            # Store user IDs for reference
+            for i, row in enumerate(rows):
+                self.users[i].id = row['id']
             conn.close()
             print(f"Loaded {len(self.users)} users successfully")
         except Exception as e:
@@ -42,15 +115,15 @@ class DataModel:
             self.users = []
 
     def load_products(self):
-        """Load products from MySQL database"""
+        """Load products from MySQL database - NOW USES product_id (PR##### format)"""
         try:
             print("Connecting to database for products...")
             conn = get_connection()
             print("Connected! Fetching products...")
             cur = conn.cursor(dictionary=True)
-            cur.execute("SELECT id, name, price, stock FROM products")
+            cur.execute("SELECT product_id, name, price, stock FROM products")
             rows = cur.fetchall()
-            self.products = [Product(row['id'], row['name'], row['price'], row['stock']) for row in rows]
+            self.products = [Product(row['product_id'], row['name'], row['price'], row['stock']) for row in rows]
             conn.close()
             print(f"Loaded {len(self.products)} products successfully")
         except Exception as e:
@@ -60,16 +133,16 @@ class DataModel:
             self.products = []
 
     def load_transactions(self):
-        """Load transactions from MySQL database (with separate transaction_items table)"""
+        """Load transactions from MySQL database - NOW INCLUDES user_id"""
         try:
             print("Connecting to database for transactions...")
             conn = get_connection()
             print("Connected! Fetching transactions...")
             cur = conn.cursor(dictionary=True)
 
-            # Get all transactions
+            # Get all transactions with user_id
             cur.execute("""
-                SELECT id, order_id, staff_name, total_amount, date
+                SELECT id, order_id, user_id, staff_name, total_amount, date
                 FROM transactions
                 ORDER BY id DESC
             """)
@@ -93,14 +166,16 @@ class DataModel:
                         'price': float(item_row['price'])
                     })
 
-                # Create Transaction object
-                self.transactions.append(Transaction(
+                # Create Transaction object with user_id
+                transaction = Transaction(
                     trans["order_id"],
                     trans["staff_name"],
                     items,
                     float(trans["total_amount"]),
                     trans["date"]
-                ))
+                )
+                transaction.user_id = trans["user_id"]  # Add user_id attribute
+                self.transactions.append(transaction)
 
             conn.close()
             print(f"Loaded {len(self.transactions)} transactions successfully")
@@ -199,47 +274,59 @@ class DataModel:
         return [u for u in self.users if search_term.lower() in u.username.lower()]
 
     def add_product(self, name, price, stock):
-        """Add product to MySQL database"""
+        """Add product to MySQL database - NOW AUTO-GENERATES product_id (PR##### format)"""
         try:
             conn = get_connection()
             cur = conn.cursor()
+
+            # Generate unique product_id
+            product_id = generate_next_product_id(cur)
+
             cur.execute(
-                "INSERT INTO products (name, price, stock) VALUES (%s, %s, %s)",
-                (name, price, stock)
+                "INSERT INTO products (product_id, name, price, stock) VALUES (%s, %s, %s, %s)",
+                (product_id, name, price, stock)
             )
             conn.commit()
             conn.close()
             self.load_products()
-            return True
+            return True, product_id
         except Exception as e:
             print(f"Error adding product: {e}")
-            return False
+            import traceback
+            traceback.print_exc()
+            return False, None
 
     def delete_product(self, product_id):
-        """Delete a product by ID"""
+        """Delete a product by product_id (now VARCHAR: PR#####)"""
         try:
             conn = get_connection()
             cur = conn.cursor()
-            cur.execute("DELETE FROM products WHERE id = %s", (product_id,))
+            cur.execute("DELETE FROM products WHERE product_id = %s", (product_id,))
             conn.commit()
             conn.close()
             self.load_products()
-            return True
+            return True, "Product deleted successfully"
         except Exception as e:
             print(f"Error deleting product: {e}")
-            return False
+            import traceback
+            traceback.print_exc()
+            return False, f"Error: {e}"
 
     def search_products(self, search_term):
-        """Search products by name"""
+        """Search products by name or product_id"""
         if not search_term:
             return self.products
-        return [p for p in self.products if search_term.lower() in p.name.lower()]
+        search_lower = search_term.lower()
+        return [p for p in self.products
+                if search_lower in p.name.lower()
+                or search_lower in p.product_id.lower()]
 
     def add_to_cart(self, product, quantity):
+        """Add product to cart - uses product_id"""
         if product.stock < quantity:
             return False
         for item in self.cart:
-            if item.product.id == product.id:
+            if item.product.product_id == product.product_id:
                 if item.quantity + quantity > product.stock:
                     return False
                 item.quantity += quantity
@@ -258,35 +345,49 @@ class DataModel:
         return sum(item.get_total() for item in self.cart)
 
     def complete_sale(self):
-        """Complete sale and record transaction in MySQL (normalized schema)"""
+        """
+        Complete sale and record transaction in MySQL
+        NOW INCLUDES user_id and uses auto-generated order_id
+        """
         if not self.cart or not self.current_user:
+            print("Cannot complete sale: cart empty or no user logged in")
             return False
 
         try:
             conn = get_connection()
             cur = conn.cursor()
 
-            # Get next order ID
-            cur.execute("SELECT COUNT(*) FROM transactions")
-            count = cur.fetchone()[0]
-            order_id = f"OR{count + 1:04d}"
+            # Generate next order_id using system_settings
+            order_id = generate_next_order_id(cur)
 
             # Prepare items list
             items = []
             for cart_item in self.cart:
                 items.append({
-                    'product_id': cart_item.product.id,
+                    'product_id': cart_item.product.product_id,  # Now uses product_id (PR#####)
                     'product_name': cart_item.product.name,
                     'quantity': cart_item.quantity,
                     'price': cart_item.product.price
                 })
 
-            # Insert transaction into transactions table
+            # Get user_id for current user
+            cur.execute("SELECT id FROM users WHERE username = %s", (self.current_user.username,))
+            user_result = cur.fetchone()
+
+            if not user_result:
+                print(f"ERROR: Could not find user_id for username: {self.current_user.username}")
+                conn.close()
+                return False
+
+            user_id = user_result[0]
+
+            # Insert transaction into transactions table WITH user_id
             cur.execute(
-                "INSERT INTO transactions (order_id, staff_name, total_amount, date) "
-                "VALUES (%s, %s, %s, %s)",
+                "INSERT INTO transactions (order_id, user_id, staff_name, total_amount, date) "
+                "VALUES (%s, %s, %s, %s, %s)",
                 (
                     order_id,
+                    user_id,  # NEW: Now includes user_id
                     self.current_user.username,
                     self.get_cart_total(),
                     datetime.now().strftime("%m-%d-%Y %I:%M %p")
@@ -312,7 +413,7 @@ class DataModel:
 
                 # Update stock for each product
                 cur.execute(
-                    "UPDATE products SET stock = stock - %s WHERE id = %s",
+                    "UPDATE products SET stock = stock - %s WHERE product_id = %s",
                     (item["quantity"], item["product_id"])
                 )
 
@@ -326,7 +427,7 @@ class DataModel:
             self.load_products()
             self.load_transactions()
 
-            print(f"Transaction saved: {order_id}")
+            print(f"Transaction saved: {order_id} by user_id: {user_id} ({self.current_user.username})")
             print(f"Total transactions: {len(self.transactions)}")
 
             return True
@@ -344,3 +445,16 @@ class DataModel:
         return [t for t in self.transactions
                 if search_term in t.order_id.lower()
                 or search_term in t.staff_name.lower()]
+
+    def get_user_by_id(self, user_id):
+        """Get user details by user_id"""
+        try:
+            conn = get_connection()
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT id, username, role FROM users WHERE id = %s", (user_id,))
+            result = cur.fetchone()
+            conn.close()
+            return result
+        except Exception as e:
+            print(f"Error getting user: {e}")
+            return None

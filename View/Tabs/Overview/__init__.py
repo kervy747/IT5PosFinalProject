@@ -1,6 +1,5 @@
-# Overview package
+from .statCard import StatCard
+from .topProductCard import TopProductCard
 from .overviewTab import OverviewTab
-from .metricCard import MetricCard
-from .productRankItem import ProductRankItem
 
-__all__ = ['OverviewTab', 'MetricCard', 'ProductRankItem']
+__all__ = ['StatCard', 'TopProductCard', 'OverviewTab']

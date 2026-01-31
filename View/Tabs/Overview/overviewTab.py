@@ -4,12 +4,12 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from View.colors import *
 from View.components import *
-from .metricCard import MetricCard
-from .productRankItem import ProductRankItem
+from .statCard import StatCard
+from .topProductCard import TopProductCard
 
 
 class OverviewTab(QWidget):
-    """Overview tab - displays dashboard metrics and statistics"""
+    """Modern POS Dashboard Overview"""
 
     def __init__(self):
         super().__init__()
@@ -17,133 +17,184 @@ class OverviewTab(QWidget):
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(25, 25, 25, 25)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(24)
 
-        # Header
-        header = SectionLabel("Dashboard Overview", 24)
-        main_layout.addWidget(header)
+        # Removed header to save space
 
-        # Metrics Row
-        metrics_layout = QHBoxLayout()
-        metrics_layout.setSpacing(15)
+        # Stats Grid - 4 columns
+        stats_grid = QGridLayout()
+        stats_grid.setSpacing(16)
 
-        self.monthly_sales_card = MetricCard("Monthly Sales", "₱0.00", "This month", PRIMARY)
-        self.yearly_sales_card = MetricCard("Yearly Sales", "₱0.00", "This year", "#00796B")
-        self.total_transactions_card = MetricCard("Transactions", "0", "All time", "#0277BD")
-        self.avg_sale_card = MetricCard("Avg. Sale", "₱0.00", "Per transaction", "#7B1FA2")
+        self.revenue_card = StatCard("Today's Revenue", "₱0.00", "💰", color=PRIMARY)
+        self.monthly_card = StatCard("Monthly Sales", "₱0.00", "📊", color="#00897B")
+        self.transactions_card = StatCard("Transactions", "0", "🛒", color="#1E88E5")
+        self.avg_card = StatCard("Avg. Transaction", "₱0.00", "💳", color="#7B1FA2")
 
-        metrics_layout.addWidget(self.monthly_sales_card)
-        metrics_layout.addWidget(self.yearly_sales_card)
-        metrics_layout.addWidget(self.total_transactions_card)
-        metrics_layout.addWidget(self.avg_sale_card)
+        stats_grid.addWidget(self.revenue_card, 0, 0)
+        stats_grid.addWidget(self.monthly_card, 0, 1)
+        stats_grid.addWidget(self.transactions_card, 0, 2)
+        stats_grid.addWidget(self.avg_card, 0, 3)
 
-        main_layout.addLayout(metrics_layout)
+        main_layout.addLayout(stats_grid)
 
-        # Content Row
+        # Content area with 2 columns
         content_layout = QHBoxLayout()
-        content_layout.setSpacing(15)
+        content_layout.setSpacing(20)
+
+        # LEFT COLUMN - Top Products
+        left_column = QVBoxLayout()
+        left_column.setSpacing(16)
 
         # Top Products Section
-        top_products_container = CardFrame()
-        top_products_layout = QVBoxLayout(top_products_container)
-        top_products_layout.setContentsMargins(25, 20, 25, 20)
-        top_products_layout.setSpacing(15)
+        products_container = CardFrame()
+        products_layout = QVBoxLayout(products_container)
+        products_layout.setContentsMargins(24, 20, 24, 20)
+        products_layout.setSpacing(16)
 
-        top_products_title = QLabel("🏆 Top 5 Best Sellers")
-        top_products_title.setFont(QFont("Poppins", 16, QFont.Weight.Bold))
-        top_products_title.setStyleSheet(f"color: {PRIMARY};")
-        top_products_layout.addWidget(top_products_title)
+        products_header = QLabel("🏆 Top Selling Products")
+        products_header.setFont(QFont("Poppins", 18, QFont.Weight.Bold))
+        products_header.setStyleSheet(f"color: #000000; background: transparent;")
+        products_layout.addWidget(products_header)
 
-        # Container for top products list
-        self.top_products_widget = QWidget()
-        self.top_products_list_layout = QVBoxLayout(self.top_products_widget)
-        self.top_products_list_layout.setSpacing(10)
-        self.top_products_list_layout.setContentsMargins(0, 0, 0, 0)
+        # Scroll area for products
+        self.products_widget = QWidget()
+        self.products_list_layout = QVBoxLayout(self.products_widget)
+        self.products_list_layout.setSpacing(10)
+        self.products_list_layout.setContentsMargins(0, 0, 0, 0)
 
-        scroll_area = QScrollArea()
-        scroll_area.setWidget(self.top_products_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setStyleSheet("""
+        scroll = QScrollArea()
+        scroll.setWidget(self.products_widget)
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
             QScrollArea {
                 border: none;
                 background-color: transparent;
             }
+            QScrollBar:vertical {
+                border: none;
+                background: #F0F0F0;
+                width: 8px;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical {
+                background: #CCCCCC;
+                border-radius: 4px;
+            }
         """)
-        top_products_layout.addWidget(scroll_area)
+        products_layout.addWidget(scroll)
 
-        content_layout.addWidget(top_products_container, 3)
+        left_column.addWidget(products_container)
+        content_layout.addLayout(left_column, 3)
 
-        # Inventory Status Section
-        stock_container = CardFrame()
-        stock_layout = QVBoxLayout(stock_container)
-        stock_layout.setContentsMargins(25, 20, 25, 20)
-        stock_layout.setSpacing(15)
+        # RIGHT COLUMN - Inventory & Quick Stats
+        right_column = QVBoxLayout()
+        right_column.setSpacing(16)
 
-        stock_title = QLabel("📦 Inventory Status")
-        stock_title.setFont(QFont("Poppins", 16, QFont.Weight.Bold))
-        stock_title.setStyleSheet(f"color: {PRIMARY};")
-        stock_layout.addWidget(stock_title)
+        # Inventory Summary
+        inventory_container = CardFrame()
+        inventory_layout = QVBoxLayout(inventory_container)
+        inventory_layout.setContentsMargins(24, 20, 24, 20)
+        inventory_layout.setSpacing(16)
 
-        # Stock metrics
-        self.total_stock_label = QLabel("Total Items: 0")
-        self.total_stock_label.setFont(QFont("Poppins", 13))
-        self.total_stock_label.setStyleSheet("color: #2c3e50; padding: 10px; background-color: #F8FAFB; border-radius: 8px;")
-        stock_layout.addWidget(self.total_stock_label)
+        inventory_header = QLabel("📦 Inventory Overview")
+        inventory_header.setFont(QFont("Poppins", 18, QFont.Weight.Bold))
+        inventory_header.setStyleSheet(f"color: #000000; background: transparent;")
+        inventory_layout.addWidget(inventory_header)
 
-        self.low_stock_label = QLabel("⚠️ Low Stock Items: 0")
-        self.low_stock_label.setFont(QFont("Poppins", 13))
-        self.low_stock_label.setStyleSheet("color: #F57C00; padding: 10px; background-color: #FFF3E0; border-radius: 8px;")
-        stock_layout.addWidget(self.low_stock_label)
+        # Inventory metrics
+        inv_grid = QGridLayout()
+        inv_grid.setSpacing(12)
 
-        self.out_of_stock_label = QLabel("❌ Out of Stock: 0")
-        self.out_of_stock_label.setFont(QFont("Poppins", 13))
-        self.out_of_stock_label.setStyleSheet("color: #D32F2F; padding: 10px; background-color: #FFEBEE; border-radius: 8px;")
-        stock_layout.addWidget(self.out_of_stock_label)
+        self.total_products_widget = self._create_mini_stat("Total Products", "0", "#10B981")
+        self.total_stock_widget = self._create_mini_stat("Total Stock", "0", PRIMARY)
+        self.low_stock_widget = self._create_mini_stat("Low Stock", "0", "#F59E0B")
+        self.out_stock_widget = self._create_mini_stat("Out of Stock", "0", "#EF4444")
 
-        # Low stock products list
-        low_stock_list_label = QLabel("Items Below 10 Units:")
-        low_stock_list_label.setFont(QFont("Poppins", 12, QFont.Weight.Bold))
-        low_stock_list_label.setStyleSheet("color: #2c3e50; margin-top: 15px;")
-        stock_layout.addWidget(low_stock_list_label)
+        inv_grid.addWidget(self.total_products_widget, 0, 0)
+        inv_grid.addWidget(self.total_stock_widget, 0, 1)
+        inv_grid.addWidget(self.low_stock_widget, 1, 0)
+        inv_grid.addWidget(self.out_stock_widget, 1, 1)
 
-        self.low_stock_list = QListWidget()
-        self.low_stock_list.setStyleSheet("""
-            QListWidget {
-                border: 2px solid #E8F4F5;
-                border-radius: 8px;
+        inventory_layout.addLayout(inv_grid)
+
+        # Alert list
+        alert_header = QLabel("⚠️ Stock Alerts")
+        alert_header.setFont(QFont("Poppins", 13, QFont.Weight.Bold))
+        alert_header.setStyleSheet(f"color: #000000; margin-top: 8px; background: transparent;")
+        inventory_layout.addWidget(alert_header)
+
+        self.alert_list = QListWidget()
+        self.alert_list.setStyleSheet(f"""
+            QListWidget {{
+                border: 1px solid {BACKGROUND};
+                border-radius: 10px;
                 padding: 8px;
-                background-color: #FAFAFA;
+                background-color: {BACKGROUND};
                 font-family: Poppins;
                 font-size: 11px;
-            }
-            QListWidget::item {
+                color: black;
+            }}
+            QListWidget::item {{
                 padding: 10px;
-                border-bottom: 1px solid #EEEEEE;
                 border-radius: 6px;
-                margin: 2px;
-            }
-            QListWidget::item:hover {
-                background-color: #FFF3E0;
-            }
+                margin: 2px 0;
+                background-color: {WHITE};
+                color: black;
+            }}
+            QListWidget::item:hover {{
+                background-color: #FFF7ED;
+            }}
         """)
-        stock_layout.addWidget(self.low_stock_list)
+        self.alert_list.setMaximumHeight(280)
+        inventory_layout.addWidget(self.alert_list)
 
-        content_layout.addWidget(stock_container, 2)
+        right_column.addWidget(inventory_container)
+        content_layout.addLayout(right_column, 2)
 
         main_layout.addLayout(content_layout)
-        main_layout.addStretch()
+
+    def _create_mini_stat(self, label, value, color):
+        """Create mini stat widget"""
+        container = QFrame()
+        container.setStyleSheet(f"""
+            QFrame {{
+                background-color: {WHITE};
+                border-radius: 10px;
+                border-left: 4px solid {color};
+                border: 1px solid {BACKGROUND};
+            }}
+        """)
+        container.setMinimumHeight(70)
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(4)
+
+        title = QLabel(label)
+        title.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
+        title.setStyleSheet(f"color: #000000; border: none; background: transparent;")
+        layout.addWidget(title)
+
+        val = QLabel(value)
+        val.setFont(QFont("Poppins", 20, QFont.Weight.Bold))
+        val.setStyleSheet(f"color: {color}; border: none; background: transparent;")
+        val.setObjectName(f"{label.replace(' ', '_').lower()}_value")
+        layout.addWidget(val)
+
+        return container
 
     def update_overview(self, transactions, products):
-        """Update all overview data"""
+        """Update dashboard with latest data"""
         try:
             now = datetime.now()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
-            # Calculate sales
-            monthly_sales = 0
-            yearly_sales = 0
+            # Calculate revenue
+            today_revenue = 0
+            monthly_revenue = 0
+            total_transactions = len(transactions)
 
             for t in transactions:
                 try:
@@ -152,90 +203,96 @@ class OverviewTab(QWidget):
                     elif hasattr(t, 'date') and t.date:
                         trans_date = datetime.strptime(t.date, "%m-%d-%Y %I:%M %p")
                     else:
-                        monthly_sales += t.total_amount
-                        yearly_sales += t.total_amount
+                        monthly_revenue += t.total_amount
                         continue
 
+                    if trans_date >= today_start:
+                        today_revenue += t.total_amount
                     if trans_date >= month_start:
-                        monthly_sales += t.total_amount
-                    if trans_date >= year_start:
-                        yearly_sales += t.total_amount
-                except (ValueError, AttributeError):
-                    monthly_sales += t.total_amount
-                    yearly_sales += t.total_amount
+                        monthly_revenue += t.total_amount
+                except:
+                    monthly_revenue += t.total_amount
 
-            # Total transactions and average
-            total_transactions = len(transactions)
-            avg_sale = sum(t.total_amount for t in transactions) / total_transactions if total_transactions > 0 else 0
+            avg_transaction = sum(
+                t.total_amount for t in transactions) / total_transactions if total_transactions > 0 else 0
 
-            # Update metric cards
-            self.monthly_sales_card.update_value(f"₱{monthly_sales:,.2f}")
-            self.yearly_sales_card.update_value(f"₱{yearly_sales:,.2f}")
-            self.total_transactions_card.update_value(str(total_transactions))
-            self.avg_sale_card.update_value(f"₱{avg_sale:,.2f}")
+            # Update stat cards
+            self.revenue_card.update_value(f"₱{today_revenue:,.2f}")
+            self.monthly_card.update_value(f"₱{monthly_revenue:,.2f}")
+            self.transactions_card.update_value(str(total_transactions))
+            self.avg_card.update_value(f"₱{avg_transaction:,.2f}")
 
-            # Top Products
-            product_sales = {}
-            try:
-                for transaction in transactions:
-                    for item in transaction.items:
-                        if isinstance(item, dict):
-                            product_name = item.get('product_name', item.get('product', {}).get('name', 'Unknown'))
-                            quantity = item.get('quantity', 0)
-                        else:
-                            product_name = getattr(item, 'product_name', 'Unknown')
-                            quantity = getattr(item, 'quantity', 0)
+            # Calculate top products with revenue
+            product_data = {}
+            for transaction in transactions:
+                for item in transaction.items:
+                    if isinstance(item, dict):
+                        product_name = item.get('product_name', 'Unknown')
+                        quantity = item.get('quantity', 0)
+                        price = item.get('price', 0)
+                    else:
+                        product_name = getattr(item, 'product_name', 'Unknown')
+                        quantity = getattr(item, 'quantity', 0)
+                        price = getattr(item, 'price', 0)
 
-                        product_sales[product_name] = product_sales.get(product_name, 0) + quantity
-            except Exception as e:
-                print(f"Error calculating top products: {e}")
+                    if product_name not in product_data:
+                        product_data[product_name] = {'quantity': 0, 'revenue': 0}
+                    product_data[product_name]['quantity'] += quantity
+                    product_data[product_name]['revenue'] += quantity * price
 
-            # Get top 5 products
-            top_products = sorted(product_sales.items(), key=lambda x: x[1], reverse=True)[:5]
+            # Sort by revenue
+            top_products = sorted(product_data.items(), key=lambda x: x[1]['revenue'], reverse=True)[:5]
 
-            # Clear existing product widgets
-            while self.top_products_list_layout.count():
-                child = self.top_products_list_layout.takeAt(0)
+            # Clear and update products list
+            while self.products_list_layout.count():
+                child = self.products_list_layout.takeAt(0)
                 if child.widget():
                     child.widget().deleteLater()
 
-            # Add top products
             if top_products:
-                colors = ["#00897B", "#1E88E5", "#7B1FA2", "#F57C00", "#E53935"]
-                for idx, (product_name, quantity) in enumerate(top_products):
-                    rank_item = ProductRankItem(idx + 1, product_name, quantity, colors[idx])
-                    self.top_products_list_layout.addWidget(rank_item)
+                for idx, (name, data) in enumerate(top_products):
+                    card = TopProductCard(idx + 1, name, data['quantity'], data['revenue'])
+                    self.products_list_layout.addWidget(card)
             else:
-                no_data_label = QLabel("No sales data available")
-                no_data_label.setFont(QFont("Poppins", 12))
-                no_data_label.setStyleSheet("color: #999999; padding: 30px;")
-                no_data_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                self.top_products_list_layout.addWidget(no_data_label)
+                no_data = QLabel("No sales data available yet")
+                no_data.setFont(QFont("Poppins", 12))
+                no_data.setStyleSheet(f"color: {TEXT_DARK}60; padding: 40px;")
+                no_data.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.products_list_layout.addWidget(no_data)
 
-            self.top_products_list_layout.addStretch()
+            self.products_list_layout.addStretch()
 
-            # Inventory Status
+            # Update inventory stats
             total_stock = sum(p.stock for p in products)
-            low_stock_items = [p for p in products if 0 < p.stock <= 10]
-            out_of_stock_items = [p for p in products if p.stock == 0]
+            low_stock = [p for p in products if 0 < p.stock <= 10]
+            out_of_stock = [p for p in products if p.stock == 0]
 
-            self.total_stock_label.setText(f"📊 Total Items in Stock: {total_stock}")
-            self.low_stock_label.setText(f"⚠️ Low Stock Items (≤10): {len(low_stock_items)}")
-            self.out_of_stock_label.setText(f"❌ Out of Stock: {len(out_of_stock_items)}")
+            # Update mini stats
+            self._update_mini_stat(self.total_products_widget, str(len(products)))
+            self._update_mini_stat(self.total_stock_widget, str(total_stock))
+            self._update_mini_stat(self.low_stock_widget, str(len(low_stock)))
+            self._update_mini_stat(self.out_stock_widget, str(len(out_of_stock)))
 
-            # Update low stock list
-            self.low_stock_list.clear()
-            for product in sorted(low_stock_items, key=lambda p: p.stock):
-                self.low_stock_list.addItem(f"⚠ {product.name}: {product.stock} units")
+            # Update alert list
+            self.alert_list.clear()
 
-            for product in out_of_stock_items:
-                self.low_stock_list.addItem(f"❌ {product.name}: OUT OF STOCK")
+            for product in sorted(out_of_stock, key=lambda p: p.name):
+                self.alert_list.addItem(f"🔴 {product.name} - OUT OF STOCK")
 
-            if not low_stock_items and not out_of_stock_items:
-                self.low_stock_list.addItem("✅ All products are well stocked!")
+            for product in sorted(low_stock, key=lambda p: p.stock):
+                self.alert_list.addItem(f"🟡 {product.name} - {product.stock} units left")
+
+            if not low_stock and not out_of_stock:
+                self.alert_list.addItem("✅ All products are well stocked!")
 
         except Exception as e:
             print(f"Error updating overview: {e}")
             import traceback
             traceback.print_exc()
-            QMessageBox.warning(self, "Error", f"Failed to update overview: {str(e)}")
+
+    def _update_mini_stat(self, widget, value):
+        """Update mini stat value"""
+        for child in widget.findChildren(QLabel):
+            if child.objectName().endswith('_value'):
+                child.setText(value)
+                break
