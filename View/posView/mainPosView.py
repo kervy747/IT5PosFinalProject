@@ -6,7 +6,7 @@ from View.posView.cartView import cartView
 
 
 class mainPosView(QWidget):
-    add_to_cart_signal = pyqtSignal(int, int)
+    add_to_cart_signal = pyqtSignal(str, int)  # product_id (str), quantity (int)
     remove_from_cart_signal = pyqtSignal(int)
     complete_sale_signal = pyqtSignal()
     logout_signal = pyqtSignal()
@@ -151,11 +151,20 @@ class mainPosView(QWidget):
         self.setLayout(main_layout)
 
     def update_products(self, products):
-        self.products_table.setRowCount(len(products))
-        for i, product in enumerate(products):
-            # ID
-            id_item = QTableWidgetItem(str(product.id))
-            id_item.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
+        """
+        Update products display
+        NEW: Filters out products with 0 stock (only shows available items)
+        """
+        # ✅ FILTER: Only show products with stock > 0
+        available_products = [p for p in products if p.stock > 0]
+
+        self.products_table.setRowCount(len(available_products))
+
+        for i, product in enumerate(available_products):
+            # ID - Uses product_id (PR#####)
+            id_item = QTableWidgetItem(str(product.product_id))
+            id_item.setFont(QFont("Poppins", 9, QFont.Weight.Bold))
+            id_item.setForeground(QColor("#006D77"))  # Teal color for product ID
             id_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.products_table.setItem(i, 0, id_item)
 
@@ -170,10 +179,19 @@ class mainPosView(QWidget):
             price_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.products_table.setItem(i, 2, price_item)
 
-            # Stock
+            # Stock - Add visual indicator for low stock
             stock_item = QTableWidgetItem(str(product.stock))
-            stock_item.setFont(QFont("Poppins", 10))
+            stock_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold))
             stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            # Color code based on stock level
+            if product.stock <= 5:
+                stock_item.setForeground(QColor("#D32F2F"))  # Red for low stock
+            elif product.stock <= 10:
+                stock_item.setForeground(QColor("#F57C00"))  # Orange for medium stock
+            else:
+                stock_item.setForeground(QColor("#2E7D32"))  # Green for good stock
+
             self.products_table.setItem(i, 3, stock_item)
 
             # Quantity input - MUCH BIGGER and easier to click
@@ -214,7 +232,7 @@ class mainPosView(QWidget):
             self.products_table.setCellWidget(i, 4, container)
 
         # Set column widths
-        self.products_table.setColumnWidth(0, 60)
+        self.products_table.setColumnWidth(0, 80)  # Wider for PR##### format
         self.products_table.setColumnWidth(2, 120)
         self.products_table.setColumnWidth(3, 80)
         self.products_table.setColumnWidth(4, 150)  # Wider column for bigger input
@@ -222,6 +240,28 @@ class mainPosView(QWidget):
         # Make rows taller to accommodate bigger input
         for row in range(self.products_table.rowCount()):
             self.products_table.setRowHeight(row, 55)
+
+        # Show message if no products available
+        if len(available_products) == 0:
+            self.show_no_products_message()
+
+    def show_no_products_message(self):
+        """Display a message when there are no products in stock"""
+        # Clear the table
+        self.products_table.setRowCount(1)
+
+        # Merge all columns for the message
+        self.products_table.setSpan(0, 0, 1, 5)
+
+        # Create message item
+        message_item = QTableWidgetItem("No products available in stock")
+        message_item.setFont(QFont("Poppins", 12, QFont.Weight.Bold))
+        message_item.setForeground(QColor("#757575"))
+        message_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        message_item.setFlags(Qt.ItemFlag.NoItemFlags)  # Make it non-selectable
+
+        self.products_table.setItem(0, 0, message_item)
+        self.products_table.setRowHeight(0, 100)
 
     def update_cart(self, cart, total):
         """Delegate to CartView"""
@@ -290,8 +330,20 @@ class mainPosView(QWidget):
     def on_add_to_cart(self):
         row = self.products_table.currentRow()
         if row >= 0:
-            product_id = int(self.products_table.item(row, 0).text())
+            # Check if this is the "no products" message row
+            if self.products_table.rowSpan(row, 0) > 1:
+                QMessageBox.information(self, "No Products", "There are no products available in stock.")
+                return
+
+            # Get product_id as string (e.g., "PR00001")
+            product_id = self.products_table.item(row, 0).text()
             qty_widget = self.products_table.cellWidget(row, 4)
             qty_input = qty_widget.findChild(QLineEdit)
             quantity = int(qty_input.text()) if qty_input and qty_input.text() else 1
+
+            # Debug print (optional - remove later)
+            print(f"Adding to cart: product_id={product_id} (type: {type(product_id)}), quantity={quantity}")
+
             self.add_to_cart_signal.emit(product_id, quantity)
+        else:
+            QMessageBox.warning(self, "No Selection", "Please select a product first.")
