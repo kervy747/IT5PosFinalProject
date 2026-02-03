@@ -9,7 +9,7 @@ class ProductManagementTab(QWidget):
     """Product Management tab - add, delete, and search products"""
 
     add_product_signal = pyqtSignal(str, float, int)
-    delete_product_signal = pyqtSignal(int)
+    delete_product_signal = pyqtSignal(str)        # FIXED: was pyqtSignal(int) — product_id is "PR#####"
     search_products_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -105,7 +105,7 @@ class ProductManagementTab(QWidget):
         self.products_table.setRowCount(len(products))
         for i, product in enumerate(products):
             # ID
-            id_item = QTableWidgetItem(str(product.id))
+            id_item = QTableWidgetItem(str(product.product_id))
             id_item.setForeground(QColor("#2c3e50"))
             id_item.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
             id_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -131,9 +131,9 @@ class ProductManagementTab(QWidget):
             stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.products_table.setItem(i, 3, stock_item)
 
-            # Delete button
+            # Delete button — FIXED: use product.product_id explicitly (str)
             delete_btn = DeleteButton()
-            delete_btn.clicked.connect(lambda checked, pid=product.id: self.delete_product_signal.emit(pid))
+            delete_btn.clicked.connect(lambda checked, pid=product.product_id: self.delete_product_signal.emit(pid))
 
             btn_container = QWidget()
             btn_layout = QHBoxLayout(btn_container)

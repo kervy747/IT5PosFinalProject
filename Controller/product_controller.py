@@ -14,9 +14,15 @@ class ProductController:
         self.main_window = main_controller.main_window
 
     def handle_add_product(self, name, price, stock):
-        """Add a new product"""
-        self.model.add_product(name, price, stock)
-        QMessageBox.information(self.main_window, "Success", "Product added successfully")
+        """Add a new product, or update stock if product with same name exists"""
+        # FIXED: add_product now returns a tuple (success, product_id) — unpack it
+        success, product_id = self.model.add_product(name, price, stock)
+
+        if success:
+            QMessageBox.information(self.main_window, "Success", f"Product saved successfully (ID: {product_id})")
+        else:
+            QMessageBox.warning(self.main_window, "Error", "Failed to add product. Check the console for details.")
+
         self.main.admin_tabbed_view.update_products_table(self.model.products)
         self.main.pos_view.update_products(self.model.products)
 
@@ -25,13 +31,19 @@ class ProductController:
         reply = QMessageBox.question(
             self.main_window,
             "Confirm Delete",
-            f"Are you sure you want to delete this product?",
+            f"Are you sure you want to delete product {product_id}?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            self.model.delete_product(product_id)
-            QMessageBox.information(self.main_window, "Success", "Product deleted successfully")
+            # FIXED: delete_product returns a tuple (success, message) — unpack it
+            success, message = self.model.delete_product(product_id)
+
+            if success:
+                QMessageBox.information(self.main_window, "Success", "Product deleted successfully")
+            else:
+                QMessageBox.warning(self.main_window, "Error", f"Failed to delete: {message}")
+
             self.main.admin_tabbed_view.update_products_table(self.model.products)
             self.main.pos_view.update_products(self.model.products)
 

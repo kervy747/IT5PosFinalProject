@@ -1,4 +1,3 @@
-from datetime import datetime
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
@@ -9,18 +8,24 @@ from .topProductCard import TopProductCard
 
 
 class OverviewTab(QWidget):
-    """Modern POS Dashboard Overview"""
+    """Modern POS Dashboard Overview - View Only (Pure View Component)"""
 
-    def __init__(self):
+    def __init__(self, overview_controller):
+        """
+        Initialize the overview tab
+
+        Args:
+            overview_controller: Instance of OverviewController for business logic
+        """
         super().__init__()
+        self.controller = overview_controller
         self.init_ui()
 
     def init_ui(self):
+        """Initialize the user interface"""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(24)
-
-        # Removed header to save space
 
         # Stats Grid - 4 columns
         stats_grid = QGridLayout()
@@ -59,8 +64,9 @@ class OverviewTab(QWidget):
 
         # Scroll area for products
         self.products_widget = QWidget()
+        self.products_widget.setStyleSheet("background: transparent;")
         self.products_list_layout = QVBoxLayout(self.products_widget)
-        self.products_list_layout.setSpacing(10)
+        self.products_list_layout.setSpacing(12)
         self.products_list_layout.setContentsMargins(0, 0, 0, 0)
 
         scroll = QScrollArea()
@@ -155,7 +161,17 @@ class OverviewTab(QWidget):
         main_layout.addLayout(content_layout)
 
     def _create_mini_stat(self, label, value, color):
-        """Create mini stat widget"""
+        """
+        Create mini stat widget
+
+        Args:
+            label: Label for the stat
+            value: Initial value
+            color: Color for the stat
+
+        Returns:
+            QFrame: The stat widget
+        """
         container = QFrame()
         container.setStyleSheet(f"""
             QFrame {{
@@ -184,114 +200,101 @@ class OverviewTab(QWidget):
 
         return container
 
-    def update_overview(self, transactions, products):
-        """Update dashboard with latest data"""
+    def update_overview(self):
+        """
+        Update dashboard with latest data from controller
+        """
         try:
-            now = datetime.now()
-            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            # Get all data from controller
+            dashboard_data = self.controller.get_dashboard_data()
 
-            # Calculate revenue
-            today_revenue = 0
-            monthly_revenue = 0
-            total_transactions = len(transactions)
+            # Update revenue metrics
+            self._update_revenue_metrics(dashboard_data['revenue_metrics'])
 
-            for t in transactions:
-                try:
-                    if hasattr(t, 'created_at') and t.created_at:
-                        trans_date = t.created_at
-                    elif hasattr(t, 'date') and t.date:
-                        trans_date = datetime.strptime(t.date, "%m-%d-%Y %I:%M %p")
-                    else:
-                        monthly_revenue += t.total_amount
-                        continue
-
-                    if trans_date >= today_start:
-                        today_revenue += t.total_amount
-                    if trans_date >= month_start:
-                        monthly_revenue += t.total_amount
-                except:
-                    monthly_revenue += t.total_amount
-
-            avg_transaction = sum(
-                t.total_amount for t in transactions) / total_transactions if total_transactions > 0 else 0
-
-            # Update stat cards
-            self.revenue_card.update_value(f"₱{today_revenue:,.2f}")
-            self.monthly_card.update_value(f"₱{monthly_revenue:,.2f}")
-            self.transactions_card.update_value(str(total_transactions))
-            self.avg_card.update_value(f"₱{avg_transaction:,.2f}")
-
-            # Calculate top products with revenue
-            product_data = {}
-            for transaction in transactions:
-                for item in transaction.items:
-                    if isinstance(item, dict):
-                        product_name = item.get('product_name', 'Unknown')
-                        quantity = item.get('quantity', 0)
-                        price = item.get('price', 0)
-                    else:
-                        product_name = getattr(item, 'product_name', 'Unknown')
-                        quantity = getattr(item, 'quantity', 0)
-                        price = getattr(item, 'price', 0)
-
-                    if product_name not in product_data:
-                        product_data[product_name] = {'quantity': 0, 'revenue': 0}
-                    product_data[product_name]['quantity'] += quantity
-                    product_data[product_name]['revenue'] += quantity * price
-
-            # Sort by revenue
-            top_products = sorted(product_data.items(), key=lambda x: x[1]['revenue'], reverse=True)[:5]
-
-            # Clear and update products list
-            while self.products_list_layout.count():
-                child = self.products_list_layout.takeAt(0)
-                if child.widget():
-                    child.widget().deleteLater()
-
-            if top_products:
-                for idx, (name, data) in enumerate(top_products):
-                    card = TopProductCard(idx + 1, name, data['quantity'], data['revenue'])
-                    self.products_list_layout.addWidget(card)
-            else:
-                no_data = QLabel("No sales data available yet")
-                no_data.setFont(QFont("Poppins", 12))
-                no_data.setStyleSheet(f"color: {TEXT_DARK}60; padding: 40px;")
-                no_data.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                self.products_list_layout.addWidget(no_data)
-
-            self.products_list_layout.addStretch()
+            # Update top products
+            self._update_top_products(dashboard_data['top_products'])
 
             # Update inventory stats
-            total_stock = sum(p.stock for p in products)
-            low_stock = [p for p in products if 0 < p.stock <= 10]
-            out_of_stock = [p for p in products if p.stock == 0]
+            self._update_inventory_stats(dashboard_data['inventory_stats'])
 
-            # Update mini stats
-            self._update_mini_stat(self.total_products_widget, str(len(products)))
-            self._update_mini_stat(self.total_stock_widget, str(total_stock))
-            self._update_mini_stat(self.low_stock_widget, str(len(low_stock)))
-            self._update_mini_stat(self.out_stock_widget, str(len(out_of_stock)))
-
-            # Update alert list
-            self.alert_list.clear()
-
-            for product in sorted(out_of_stock, key=lambda p: p.name):
-                self.alert_list.addItem(f"🔴 {product.name} - OUT OF STOCK")
-
-            for product in sorted(low_stock, key=lambda p: p.stock):
-                self.alert_list.addItem(f"🟡 {product.name} - {product.stock} units left")
-
-            if not low_stock and not out_of_stock:
-                self.alert_list.addItem("✅ All products are well stocked!")
+            # Update stock alerts
+            self._update_stock_alerts(dashboard_data['stock_alerts'])
 
         except Exception as e:
             print(f"Error updating overview: {e}")
             import traceback
             traceback.print_exc()
 
+    def _update_revenue_metrics(self, metrics):
+        """
+        Update revenue stat cards
+
+        Args:
+            metrics: Dictionary containing revenue metrics
+        """
+        self.revenue_card.update_value(f"₱{metrics['today_revenue']:,.2f}")
+        self.monthly_card.update_value(f"₱{metrics['monthly_revenue']:,.2f}")
+        self.transactions_card.update_value(str(metrics['total_transactions']))
+        self.avg_card.update_value(f"₱{metrics['avg_transaction']:,.2f}")
+
+    def _update_top_products(self, top_products):
+        """
+        Update top products list
+
+        Args:
+            top_products: List of (product_name, data_dict) tuples
+        """
+        # Clear existing products
+        while self.products_list_layout.count():
+            child = self.products_list_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        if top_products:
+            for idx, (name, data) in enumerate(top_products):
+                card = TopProductCard(idx + 1, name, data['quantity'], data['revenue'])
+                self.products_list_layout.addWidget(card)
+        else:
+            no_data = QLabel("No sales data available yet")
+            no_data.setFont(QFont("Poppins", 12))
+            no_data.setStyleSheet(f"color: {TEXT_DARK}60; padding: 40px; background: transparent;")
+            no_data.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.products_list_layout.addWidget(no_data)
+
+        self.products_list_layout.addStretch()
+
+    def _update_inventory_stats(self, stats):
+        """
+        Update inventory statistics
+
+        Args:
+            stats: Dictionary containing inventory statistics
+        """
+        self._update_mini_stat(self.total_products_widget, str(stats['total_products']))
+        self._update_mini_stat(self.total_stock_widget, str(stats['total_stock']))
+        self._update_mini_stat(self.low_stock_widget, str(stats['low_stock_count']))
+        self._update_mini_stat(self.out_stock_widget, str(stats['out_of_stock_count']))
+
+    def _update_stock_alerts(self, alerts):
+        """
+        Update stock alerts list
+
+        Args:
+            alerts: List of alert dictionaries
+        """
+        self.alert_list.clear()
+
+        for alert in alerts:
+            self.alert_list.addItem(f"{alert['icon']} {alert['message']}")
+
     def _update_mini_stat(self, widget, value):
-        """Update mini stat value"""
+        """
+        Update mini stat value
+
+        Args:
+            widget: The stat widget to update
+            value: New value to display
+        """
         for child in widget.findChildren(QLabel):
             if child.objectName().endswith('_value'):
                 child.setText(value)

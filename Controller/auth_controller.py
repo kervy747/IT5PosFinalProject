@@ -6,7 +6,6 @@ from PyQt6.QtWidgets import QMessageBox
 
 
 class AuthController:
-    """Handles authentication operations"""
 
     def __init__(self, main_controller):
         self.main = main_controller

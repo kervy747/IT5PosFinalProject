@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QFont
 from View.components import *
 
 
@@ -79,14 +79,23 @@ class UserManagementTab(QWidget):
         else:
             QMessageBox.warning(self, "Invalid Input", "Please enter both username and password.")
 
-    def update_users_table(self, users):
-        """Update the users table display"""
+    def update_users_table(self, users, current_username=None):
+        """Update the users table display.
+
+        Args:
+            users: list of User objects
+            current_username: the username of the currently logged-in admin,
+                              used to disable the delete button on their own row
+        """
         self.users_table.setRowCount(len(users))
         for i, user in enumerate(users):
-            # Username
-            username_item = QTableWidgetItem(user.username)
-            username_item.setForeground(QColor("#2c3e50"))
-            username_item.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
+            is_current_user = (current_username and user.username == current_username)
+
+            # Username — append "(You)" if this is the logged-in user
+            display_name = f"{user.username} (You)" if is_current_user else user.username
+            username_item = QTableWidgetItem(display_name)
+            username_item.setForeground(QColor("#006D77") if is_current_user else QColor("#2c3e50"))
+            username_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold if is_current_user else QFont.Weight.Medium))
             self.users_table.setItem(i, 0, username_item)
 
             # Role
@@ -99,15 +108,36 @@ class UserManagementTab(QWidget):
             role_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.users_table.setItem(i, 1, role_item)
 
-            # Delete button
-            delete_btn = DeleteButton()
-            delete_btn.clicked.connect(lambda checked, u=user.username: self.delete_user_signal.emit(u))
-
+            # Delete button — disabled and greyed out for the current user
             btn_container = QWidget()
             btn_layout = QHBoxLayout(btn_container)
-            btn_layout.addWidget(delete_btn)
             btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
             btn_layout.setContentsMargins(5, 5, 5, 5)
+
+            if is_current_user:
+                # Greyed-out disabled button
+                disabled_btn = QPushButton("You")
+                disabled_btn.setEnabled(False)
+                disabled_btn.setMinimumHeight(40)
+                disabled_btn.setMinimumWidth(120)
+                disabled_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #D0D0D0;
+                        color: #888888;
+                        padding: 1px 1px;
+                        border-radius: 6px;
+                        font-family: Poppins;
+                        font-size: 9pt;
+                        font-weight: bold;
+                        border: none;
+                    }
+                """)
+                btn_layout.addWidget(disabled_btn)
+            else:
+                delete_btn = DeleteButton()
+                delete_btn.clicked.connect(lambda checked, u=user.username: self.delete_user_signal.emit(u))
+                btn_layout.addWidget(delete_btn)
+
             self.users_table.setCellWidget(i, 2, btn_container)
 
         self.users_table.setColumnWidth(1, 120)

@@ -6,6 +6,7 @@ from View.Tabs.Overview.overviewTab import OverviewTab
 from View.Tabs.Transaction.transactionsTab import TransactionsTab
 from View.Tabs.userManagementTab import UserManagementTab
 from View.Tabs.productManagementTab import ProductManagementTab
+from Controller.overview_controller import OverviewController
 
 
 class AdminTabbedView(QWidget):
@@ -21,14 +22,19 @@ class AdminTabbedView(QWidget):
 
     # Product management signals
     add_product_signal = pyqtSignal(str, float, int)
-    delete_product_signal = pyqtSignal(int)
+    delete_product_signal = pyqtSignal(str)
     search_products_signal = pyqtSignal(str)
 
     # Transaction signals (search only, no delete)
     search_transactions_signal = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, data_model):
         super().__init__()
+        self.data_model = data_model
+
+        # Create overview controller
+        self.overview_controller = OverviewController(data_model)
+
         self.init_ui()
         self._connect_tab_signals()
 
@@ -126,7 +132,7 @@ class AdminTabbedView(QWidget):
         """)
 
         # Create tab instances (each from separate files)
-        self.overview_tab = OverviewTab()
+        self.overview_tab = OverviewTab(self.overview_controller)
         self.transactions_tab = TransactionsTab()
         self.user_mgmt_tab = UserManagementTab()
         self.product_mgmt_tab = ProductManagementTab()
@@ -155,13 +161,14 @@ class AdminTabbedView(QWidget):
         self.transactions_tab.search_transactions_signal.connect(self.search_transactions_signal.emit)
 
     # ==================== UPDATE METHODS ====================
-    def update_overview(self, transactions, products):
+    def update_overview(self):
         """Update overview tab"""
-        self.overview_tab.update_overview(transactions, products)
+        self.overview_tab.update_overview()
 
-    def update_users_table(self, users):
-        """Update users table in user management tab"""
-        self.user_mgmt_tab.update_users_table(users)
+    def update_users_table(self, users, current_username=None):
+        """Update users table — passes current_username down so the tab
+        can disable the delete button on the logged-in user's row."""
+        self.user_mgmt_tab.update_users_table(users, current_username)
 
     def update_products_table(self, products):
         """Update products table in product management tab"""

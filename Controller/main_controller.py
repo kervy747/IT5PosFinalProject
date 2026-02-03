@@ -33,7 +33,7 @@ class POSController:
         # Store views
         self.login_view = login_view
         self.pos_view = pos_view
-        self.admin_tabbed_view = AdminTabbedView()
+        self.admin_tabbed_view = AdminTabbedView(self.model)
 
         # Setup stack widget with all views
         self.stack = QStackedWidget()
@@ -83,8 +83,12 @@ class POSController:
     def show_admin_dashboard(self):
         """Show admin dashboard with overview tab by default"""
         # Update all data
-        self.admin_tabbed_view.update_overview(self.model.transactions, self.model.products)
-        self.admin_tabbed_view.update_users_table(self.model.users)
+        self.admin_tabbed_view.update_overview()
+        # FIXED: pass current_username so the tab can disable self-delete
+        self.admin_tabbed_view.update_users_table(
+            self.model.users,
+            self.model.current_user.username if self.model.current_user else None
+        )
         self.admin_tabbed_view.update_products_table(self.model.products)
         self.admin_tabbed_view.update_transactions_table(self.model.transactions)
 

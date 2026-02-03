@@ -1,13 +1,12 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QFont, QColor, QDoubleValidator
-from View.colors import *
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QColor, QDoubleValidator
 from View.components import *
 
 
 class cartView(QWidget):
     remove_from_cart_signal = pyqtSignal(int)
-    complete_sale_signal = pyqtSignal()
+    complete_sale_signal = pyqtSignal()  # ✅ Just emit signal, no validation
 
     def __init__(self):
         super().__init__()
@@ -133,7 +132,7 @@ class cartView(QWidget):
         self.setLayout(layout)
 
     def calculate_change(self):
-        """Calculate and display change based on cash input"""
+        """Calculate and display change based on cash input - DISPLAY ONLY"""
         try:
             cash_text = self.cash_input.text().strip()
 
@@ -163,38 +162,10 @@ class cartView(QWidget):
             self.change_label.setStyleSheet(f"color: {ACCENT};")
 
     def on_complete_sale(self):
-        """Validate cash input before emitting complete sale signal"""
-        if not hasattr(self, 'cash_input') or self.cash_input is None:
-            QMessageBox.warning(self, "Error", "Cash input not initialized")
-            return
-
-        cash_text = self.cash_input.text().strip()
-
-        if not cash_text or cash_text == '.' or cash_text == '-' or cash_text == '':
-            QMessageBox.warning(self, "Error", "Please enter cash amount")
-            self.cash_input.setFocus()
-            return
-
-        try:
-            cash_amount = float(cash_text)
-        except (ValueError, TypeError):
-            QMessageBox.warning(self, "Error", "Invalid cash amount")
-            self.cash_input.setFocus()
-            return
-
-        total_float = float(self.current_total)
-
-        if cash_amount < total_float:
-            shortage = total_float - cash_amount
-            QMessageBox.warning(self, "Insufficient Cash",
-                                f"Cash is short by ₱{shortage:,.2f}")
-            self.cash_input.setFocus()
-            return
-
         self.complete_sale_signal.emit()
 
     def update_cart(self, cart, total):
-        """Update cart display"""
+        """Update cart display - DISPLAY ONLY"""
         self.current_total = total
         self.cart_table.setRowCount(len(cart))
         for i, item in enumerate(cart):
@@ -229,6 +200,7 @@ class cartView(QWidget):
         self.calculate_change()
 
     def on_remove_from_cart(self):
+        """Remove item from cart - just emit signal"""
         row = self.cart_table.currentRow()
         if row >= 0:
             self.remove_from_cart_signal.emit(row)
@@ -238,3 +210,15 @@ class cartView(QWidget):
         self.cash_input.clear()
         self.change_label.setText("Change: ₱0.00")
         self.change_label.setStyleSheet(f"color: {ACCENT};")
+
+    def get_cash_amount(self):
+        try:
+            cash_text = self.cash_input.text().strip()
+            if not cash_text or cash_text == '.' or cash_text == '-':
+                return None
+            return float(cash_text)
+        except (ValueError, TypeError):
+            return None
+
+    def get_current_total(self):
+        return self.current_total

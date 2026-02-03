@@ -91,7 +91,6 @@ class StatCard(QFrame):
         self.setLayout(main_layout)
 
     def update_value(self, value, trend=None):
-        """Update the card's value and optional trend"""
         self.value_label.setText(value)
         if trend:
             self.trend = trend

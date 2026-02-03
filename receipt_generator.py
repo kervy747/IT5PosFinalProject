@@ -26,7 +26,7 @@ class ReceiptGenerator:
             print(f"Created receipts folder: {self.receipt_folder}")
 
     def generate_receipt(self, order_id, staff_name, cart_items, total_amount,
-                         cash_amount, change_amount, transaction_date=None):
+                        cash_amount, change_amount, transaction_date=None):
         """
         Generate a formatted receipt and save to text file
 
@@ -72,21 +72,26 @@ class ReceiptGenerator:
             return False, error_msg
 
     def _format_receipt(self, order_id, staff_name, cart_items, total_amount,
-                        cash_amount, change_amount, transaction_date):
+                       cash_amount, change_amount, transaction_date):
         """
-        Format receipt content with proper alignment
+        Format receipt content with proper alignment.
+        Width auto-adjusts based on the longest product name so nothing gets cut.
 
         Returns:
             str: Formatted receipt text
         """
-        width = 50  # Receipt width in characters
+        # Dynamically calculate name column based on longest product name
+        longest_name = max((len(item.product.name) for item in cart_items), default=20)
+        name_col = max(longest_name + 2, 22)  # at least 22, or longest name + 2 padding
+        # Total width = name_col + QTY(5) + PRICE(12) + TOTAL(12) + 3 spaces between
+        width = name_col + 5 + 12 + 12 + 3
 
         # Build receipt line by line
         lines = []
 
         # Header
         lines.append("=" * width)
-        lines.append(self._center_text("TECH 360", width))
+        lines.append(self._center_text("Terminal 360", width))
         lines.append(self._center_text("Point of Sale System", width))
         lines.append("=" * width)
         lines.append("")
@@ -99,31 +104,27 @@ class ReceiptGenerator:
         lines.append("")
 
         # Items header
-        lines.append(self._format_line("ITEM", "QTY", "PRICE", "TOTAL", width))
+        lines.append(f"{'ITEM':<{name_col}} {'QTY':>5} {'PRICE':>12} {'TOTAL':>12}")
         lines.append("-" * width)
 
-        # Items
+        # Items — full product name, no truncation
         for item in cart_items:
             product_name = item.product.name
-            # Truncate name if too long
-            if len(product_name) > 20:
-                product_name = product_name[:17] + "..."
-
             qty = str(item.quantity)
             price = f"₱{item.product.price:,.2f}"
             item_total = f"₱{item.get_total():,.2f}"
 
-            lines.append(self._format_item_line(product_name, qty, price, item_total, width))
+            lines.append(f"{product_name:<{name_col}} {qty:>5} {price:>12} {item_total:>12}")
 
         lines.append("-" * width)
         lines.append("")
 
         # Totals
         lines.append(self._right_align(f"SUBTOTAL: ₱{total_amount:,.2f}", width))
-        lines.append(self._right_align(f"TOTAL: ₱{total_amount:,.2f}", width))
+        lines.append(self._right_align(f"TOTAL:    ₱{total_amount:,.2f}", width))
         lines.append("")
-        lines.append(self._right_align(f"CASH: ₱{cash_amount:,.2f}", width))
-        lines.append(self._right_align(f"CHANGE: ₱{change_amount:,.2f}", width))
+        lines.append(self._right_align(f"CASH:     ₱{cash_amount:,.2f}", width))
+        lines.append(self._right_align(f"CHANGE:   ₱{change_amount:,.2f}", width))
         lines.append("")
 
         # Footer
@@ -132,7 +133,7 @@ class ReceiptGenerator:
         lines.append(self._center_text("Please come again!", width))
         lines.append("=" * width)
         lines.append("")
-        lines.append(self._center_text("Powered by Tech 360 POS", width))
+        lines.append(self._center_text("Powered by Terminal 360", width))
         lines.append("")
 
         return "\n".join(lines)
@@ -192,7 +193,6 @@ if __name__ == "__main__":
             self.name = name
             self.price = price
 
-
     class MockCartItem:
         def __init__(self, product, quantity):
             self.product = product
@@ -200,7 +200,6 @@ if __name__ == "__main__":
 
         def get_total(self):
             return self.product.price * self.quantity
-
 
     # Test data
     items = [

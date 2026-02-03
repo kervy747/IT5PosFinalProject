@@ -18,10 +18,7 @@ class mainPosView(QWidget):
         self.cart_view = cartView()
         self.init_ui()
 
-    def set_admin_mode(self, is_admin):
-        """Show or hide the back to admin button based on user role"""
-        self.is_admin_mode = is_admin
-        self.back_to_admin_btn.setVisible(is_admin)
+
 
     def init_ui(self):
         main_layout = QVBoxLayout()
@@ -152,15 +149,12 @@ class mainPosView(QWidget):
 
     def update_products(self, products):
         """
-        Update products display
-        NEW: Filters out products with 0 stock (only shows available items)
+        ✅ FIXED: Just display products, no filtering logic
+        Controller should pass already-filtered products
         """
-        # ✅ FILTER: Only show products with stock > 0
-        available_products = [p for p in products if p.stock > 0]
+        self.products_table.setRowCount(len(products))
 
-        self.products_table.setRowCount(len(available_products))
-
-        for i, product in enumerate(available_products):
+        for i, product in enumerate(products):
             # ID - Uses product_id (PR#####)
             id_item = QTableWidgetItem(str(product.product_id))
             id_item.setFont(QFont("Poppins", 9, QFont.Weight.Bold))
@@ -242,7 +236,7 @@ class mainPosView(QWidget):
             self.products_table.setRowHeight(row, 55)
 
         # Show message if no products available
-        if len(available_products) == 0:
+        if len(products) == 0:
             self.show_no_products_message()
 
     def show_no_products_message(self):
@@ -328,6 +322,7 @@ class mainPosView(QWidget):
                     """)
 
     def on_add_to_cart(self):
+        """Just emit signal with data - no validation"""
         row = self.products_table.currentRow()
         if row >= 0:
             # Check if this is the "no products" message row
@@ -341,9 +336,7 @@ class mainPosView(QWidget):
             qty_input = qty_widget.findChild(QLineEdit)
             quantity = int(qty_input.text()) if qty_input and qty_input.text() else 1
 
-            # Debug print (optional - remove later)
-            print(f"Adding to cart: product_id={product_id} (type: {type(product_id)}), quantity={quantity}")
-
+            # Just emit signal - let controller handle the rest
             self.add_to_cart_signal.emit(product_id, quantity)
         else:
             QMessageBox.warning(self, "No Selection", "Please select a product first.")

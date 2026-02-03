@@ -61,7 +61,7 @@ class TopProductCard(QFrame):
 
         rank_label = QLabel(str(self.rank))
         rank_label.setFont(QFont("Poppins", 16, QFont.Weight.Bold))
-        rank_label.setStyleSheet(f"color: {WHITE}; border: none;")
+        rank_label.setStyleSheet(f"color: {WHITE}; border: none; background: transparent;")
         rank_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         rank_layout.addWidget(rank_label)
 
@@ -73,12 +73,12 @@ class TopProductCard(QFrame):
 
         name_label = QLabel(self.name)
         name_label.setFont(QFont("Poppins", 12, QFont.Weight.DemiBold))
-        name_label.setStyleSheet(f"color: {TEXT_DARK};")
+        name_label.setStyleSheet(f"color: {TEXT_DARK}; background: transparent;")
         info_layout.addWidget(name_label)
 
         stats_label = QLabel(f"{self.quantity} units sold")
         stats_label.setFont(QFont("Poppins", 10))
-        stats_label.setStyleSheet(f"color: #000000;")
+        stats_label.setStyleSheet(f"color: #64748B; background: transparent;")
         info_layout.addWidget(stats_label)
 
         layout.addLayout(info_layout)
@@ -87,7 +87,7 @@ class TopProductCard(QFrame):
         # Revenue
         revenue_label = QLabel(f"₱{self.revenue:,.2f}")
         revenue_label.setFont(QFont("Poppins", 14, QFont.Weight.Bold))
-        revenue_label.setStyleSheet(f"color: {PRIMARY};")
+        revenue_label.setStyleSheet(f"color: {PRIMARY}; background: transparent;")
         revenue_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(revenue_label)
 

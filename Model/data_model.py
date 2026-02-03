@@ -274,22 +274,36 @@ class DataModel:
         return [u for u in self.users if search_term.lower() in u.username.lower()]
 
     def add_product(self, name, price, stock):
-        """Add product to MySQL database - NOW AUTO-GENERATES product_id (PR##### format)"""
+        """Add product or update stock if product with same name already exists"""
         try:
             conn = get_connection()
             cur = conn.cursor()
 
-            # Generate unique product_id
-            product_id = generate_next_product_id(cur)
+            # Check if a product with this name already exists
+            cur.execute("SELECT product_id, stock FROM products WHERE name = %s", (name,))
+            existing = cur.fetchone()
 
-            cur.execute(
-                "INSERT INTO products (product_id, name, price, stock) VALUES (%s, %s, %s, %s)",
-                (product_id, name, price, stock)
-            )
-            conn.commit()
-            conn.close()
-            self.load_products()
-            return True, product_id
+            if existing:
+                # Product exists — add to its stock instead of inserting a new row
+                cur.execute(
+                    "UPDATE products SET stock = stock + %s WHERE product_id = %s",
+                    (stock, existing[0])
+                )
+                conn.commit()
+                conn.close()
+                self.load_products()
+                return True, existing[0]  # Return the existing product_id
+            else:
+                # New product — generate ID and insert
+                product_id = generate_next_product_id(cur)
+                cur.execute(
+                    "INSERT INTO products (product_id, name, price, stock) VALUES (%s, %s, %s, %s)",
+                    (product_id, name, price, stock)
+                )
+                conn.commit()
+                conn.close()
+                self.load_products()
+                return True, product_id
         except Exception as e:
             print(f"Error adding product: {e}")
             import traceback
