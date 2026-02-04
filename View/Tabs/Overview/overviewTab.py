@@ -27,6 +27,26 @@ class OverviewTab(QWidget):
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(24)
 
+        # Header with Month Selector
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(16)
+
+        # Dashboard title
+        dashboard_title = QLabel("📊 Dashboard Overview")
+        dashboard_title.setFont(QFont("Poppins", 20, QFont.Weight.Bold))
+        dashboard_title.setStyleSheet(f"color: {PRIMARY};")
+        header_layout.addWidget(dashboard_title)
+
+        header_layout.addStretch()
+
+        # Month/Year selector (dropdown)
+        self.month_selector = MonthYearSelector(start_year=2020)
+        self.month_selector.setMaximumWidth(400)
+        self.month_selector.month_changed.connect(self.on_month_changed)
+        header_layout.addWidget(self.month_selector)
+
+        main_layout.addLayout(header_layout)
+
         # Stats Grid - 4 columns
         stats_grid = QGridLayout()
         stats_grid.setSpacing(16)
@@ -61,6 +81,12 @@ class OverviewTab(QWidget):
         products_header.setFont(QFont("Poppins", 18, QFont.Weight.Bold))
         products_header.setStyleSheet(f"color: #000000; background: transparent;")
         products_layout.addWidget(products_header)
+
+        # Month indicator for top products
+        self.products_month_label = QLabel()
+        self.products_month_label.setFont(QFont("Poppins", 10))
+        self.products_month_label.setStyleSheet("color: #64748B; background: transparent;")
+        products_layout.addWidget(self.products_month_label)
 
         # Scroll area for products
         self.products_widget = QWidget()
@@ -200,13 +226,39 @@ class OverviewTab(QWidget):
 
         return container
 
-    def update_overview(self):
+    def on_month_changed(self, month, year):
+        """
+        Handle month selection change
+
+        Args:
+            month: Selected month (1-12)
+            year: Selected year
+        """
+        self.update_overview(month, year)
+
+    def update_overview(self, selected_month=None, selected_year=None):
         """
         Update dashboard with latest data from controller
+
+        Args:
+            selected_month: Optional month to display (1-12)
+            selected_year: Optional year to display
         """
         try:
             # Get all data from controller
-            dashboard_data = self.controller.get_dashboard_data()
+            dashboard_data = self.controller.get_dashboard_data(
+                selected_month, selected_year
+            )
+
+            # Update month label
+            months = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ]
+            month_name = months[dashboard_data['selected_month'] - 1]
+            self.products_month_label.setText(
+                f"For {month_name} {dashboard_data['selected_year']}"
+            )
 
             # Update revenue metrics
             self._update_revenue_metrics(dashboard_data['revenue_metrics'])
@@ -234,7 +286,7 @@ class OverviewTab(QWidget):
         """
         self.revenue_card.update_value(f"₱{metrics['today_revenue']:,.2f}")
         self.monthly_card.update_value(f"₱{metrics['monthly_revenue']:,.2f}")
-        self.transactions_card.update_value(str(metrics['total_transactions']))
+        self.transactions_card.update_value(str(metrics['monthly_transactions']))
         self.avg_card.update_value(f"₱{metrics['avg_transaction']:,.2f}")
 
     def _update_top_products(self, top_products):
@@ -255,7 +307,7 @@ class OverviewTab(QWidget):
                 card = TopProductCard(idx + 1, name, data['quantity'], data['revenue'])
                 self.products_list_layout.addWidget(card)
         else:
-            no_data = QLabel("No sales data available yet")
+            no_data = QLabel("No sales data available for this month")
             no_data.setFont(QFont("Poppins", 12))
             no_data.setStyleSheet(f"color: {TEXT_DARK}60; padding: 40px; background: transparent;")
             no_data.setAlignment(Qt.AlignmentFlag.AlignCenter)

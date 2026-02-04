@@ -13,9 +13,13 @@ class OverviewController:
         """
         self.data_model = data_model
 
-    def get_dashboard_data(self):
+    def get_dashboard_data(self, selected_month=None, selected_year=None):
         """
         Calculate and return all dashboard statistics
+
+        Args:
+            selected_month: Optional month to filter (1-12)
+            selected_year: Optional year to filter
 
         Returns:
             dict: Dictionary containing all calculated metrics
@@ -23,11 +27,21 @@ class OverviewController:
         transactions = self.data_model.transactions
         products = self.data_model.products
 
-        # Calculate revenue metrics
-        revenue_metrics = self._calculate_revenue_metrics(transactions)
+        # Use current month/year if not specified
+        if selected_month is None or selected_year is None:
+            now = datetime.now()
+            selected_month = now.month
+            selected_year = now.year
 
-        # Calculate top products
-        top_products = self._calculate_top_products(transactions)
+        # Calculate revenue metrics
+        revenue_metrics = self._calculate_revenue_metrics(
+            transactions, selected_month, selected_year
+        )
+
+        # Calculate top products for selected month
+        top_products = self._calculate_top_products(
+            transactions, selected_month, selected_year
+        )
 
         # Calculate inventory stats
         inventory_stats = self._calculate_inventory_stats(products)
@@ -39,43 +53,57 @@ class OverviewController:
             'revenue_metrics': revenue_metrics,
             'top_products': top_products,
             'inventory_stats': inventory_stats,
-            'stock_alerts': stock_alerts
+            'stock_alerts': stock_alerts,
+            'selected_month': selected_month,
+            'selected_year': selected_year
         }
 
-    def _calculate_revenue_metrics(self, transactions):
+    def _calculate_revenue_metrics(self, transactions, selected_month, selected_year):
         """
         Calculate revenue-related metrics
 
         Args:
             transactions: List of transaction objects
+            selected_month: Selected month (1-12)
+            selected_year: Selected year
 
         Returns:
             dict: Revenue metrics including today's revenue, monthly revenue, etc.
         """
         now = datetime.now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Start of selected month
+        month_start = datetime(selected_year, selected_month, 1, 0, 0, 0)
+
+        # End of selected month
+        if selected_month == 12:
+            month_end = datetime(selected_year + 1, 1, 1, 0, 0, 0)
+        else:
+            month_end = datetime(selected_year, selected_month + 1, 1, 0, 0, 0)
 
         today_revenue = 0
         monthly_revenue = 0
+        monthly_transactions = 0
         total_transactions = len(transactions)
 
         for transaction in transactions:
             trans_date = self._get_transaction_date(transaction)
 
             if trans_date:
-                if trans_date >= today_start:
+                # Today's revenue (only for current date)
+                if trans_date >= today_start and trans_date.date() == now.date():
                     today_revenue += transaction.total_amount
-                if trans_date >= month_start:
-                    monthly_revenue += transaction.total_amount
-            else:
-                # If no date available, count towards monthly
-                monthly_revenue += transaction.total_amount
 
-        # Calculate average transaction
+                # Monthly revenue (for selected month)
+                if month_start <= trans_date < month_end:
+                    monthly_revenue += transaction.total_amount
+                    monthly_transactions += 1
+
+        # Calculate average transaction for selected month
         avg_transaction = (
-            sum(t.total_amount for t in transactions) / total_transactions
-            if total_transactions > 0
+            monthly_revenue / monthly_transactions
+            if monthly_transactions > 0
             else 0
         )
 
@@ -83,6 +111,7 @@ class OverviewController:
             'today_revenue': today_revenue,
             'monthly_revenue': monthly_revenue,
             'total_transactions': total_transactions,
+            'monthly_transactions': monthly_transactions,
             'avg_transaction': avg_transaction
         }
 
@@ -106,20 +135,36 @@ class OverviewController:
 
         return None
 
-    def _calculate_top_products(self, transactions, limit=5):
+    def _calculate_top_products(self, transactions, selected_month, selected_year, limit=5):
         """
-        Calculate top selling products by revenue
+        Calculate top selling products by revenue for selected month
 
         Args:
             transactions: List of transaction objects
+            selected_month: Selected month (1-12)
+            selected_year: Selected year
             limit: Maximum number of top products to return
 
         Returns:
             list: List of tuples (product_name, {quantity, revenue})
         """
+        # Start and end of selected month
+        month_start = datetime(selected_year, selected_month, 1, 0, 0, 0)
+
+        if selected_month == 12:
+            month_end = datetime(selected_year + 1, 1, 1, 0, 0, 0)
+        else:
+            month_end = datetime(selected_year, selected_month + 1, 1, 0, 0, 0)
+
         product_data = {}
 
         for transaction in transactions:
+            trans_date = self._get_transaction_date(transaction)
+
+            # Only include transactions from selected month
+            if not trans_date or not (month_start <= trans_date < month_end):
+                continue
+
             for item in transaction.items:
                 # Handle both dict and object item formats
                 if isinstance(item, dict):
