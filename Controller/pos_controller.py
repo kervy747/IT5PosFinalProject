@@ -1,7 +1,6 @@
 from PyQt6.QtWidgets import QMessageBox
 from receipt_generator import ReceiptGenerator
 
-
 class POSOperationsController:
     def __init__(self, main_controller):
         self.main = main_controller
@@ -124,19 +123,7 @@ class POSOperationsController:
         """
         return [p for p in self.model.products if p.stock > 0]
 
-    def _generate_and_show_receipt(self, order_id, staff_name, cart_items,
-                                   total, cash_amount, change):
-        """
-        Generate receipt and ask user if they want to print/view it
-
-        Args:
-            order_id: Order ID (e.g., "OR0001")
-            staff_name: Staff member who processed the sale
-            cart_items: List of cart items
-            total: Total amount
-            cash_amount: Cash received
-            change: Change given
-        """
+    def _generate_and_show_receipt(self, order_id, staff_name, cart_items, total, cash_amount, change):
         try:
             # Generate receipt
             success, result = self.receipt_generator.generate_receipt(

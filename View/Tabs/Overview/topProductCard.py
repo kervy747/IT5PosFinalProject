@@ -5,7 +5,6 @@ from View.colors import *
 
 
 class TopProductCard(QFrame):
-    """Product card for top sellers list"""
 
     def __init__(self, rank, name, quantity, revenue):
         super().__init__()

@@ -1,21 +1,13 @@
-"""
-Product Management Controller
-Handles product CRUD operations
-"""
 from PyQt6.QtWidgets import QMessageBox
 
 
 class ProductController:
-    """Handles product management operations"""
-
     def __init__(self, main_controller):
         self.main = main_controller
         self.model = main_controller.model
         self.main_window = main_controller.main_window
 
     def handle_add_product(self, name, price, stock):
-        """Add a new product, or update stock if product with same name exists"""
-        # FIXED: add_product now returns a tuple (success, product_id) — unpack it
         success, product_id = self.model.add_product(name, price, stock)
 
         if success:
@@ -27,7 +19,6 @@ class ProductController:
         self.main.pos_view.update_products(self.model.products)
 
     def handle_delete_product(self, product_id):
-        """Delete a product with confirmation"""
         reply = QMessageBox.question(
             self.main_window,
             "Confirm Delete",
@@ -48,6 +39,5 @@ class ProductController:
             self.main.pos_view.update_products(self.model.products)
 
     def handle_search_products(self, search_term):
-        """Search products by term"""
         filtered_products = self.model.search_products(search_term)
         self.main.admin_tabbed_view.update_products_table(filtered_products)

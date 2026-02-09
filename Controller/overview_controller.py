@@ -1,52 +1,28 @@
 from datetime import datetime
 
-
 class OverviewController:
-    """Controller for handling Overview dashboard business logic"""
-
     def __init__(self, data_model):
-        """
-        Initialize the overview controller
-
-        Args:
-            data_model: The main data model containing transactions and products
-        """
-        self.data_model = data_model
+         self.data_model = data_model
 
     def get_dashboard_data(self, selected_month=None, selected_year=None):
-        """
-        Calculate and return all dashboard statistics
-
-        Args:
-            selected_month: Optional month to filter (1-12)
-            selected_year: Optional year to filter
-
-        Returns:
-            dict: Dictionary containing all calculated metrics
-        """
         transactions = self.data_model.transactions
         products = self.data_model.products
 
-        # Use current month/year if not specified
         if selected_month is None or selected_year is None:
             now = datetime.now()
             selected_month = now.month
             selected_year = now.year
 
-        # Calculate revenue metrics
         revenue_metrics = self._calculate_revenue_metrics(
             transactions, selected_month, selected_year
         )
 
-        # Calculate top products for selected month
         top_products = self._calculate_top_products(
             transactions, selected_month, selected_year
         )
 
-        # Calculate inventory stats
         inventory_stats = self._calculate_inventory_stats(products)
 
-        # Get stock alerts
         stock_alerts = self._get_stock_alerts(products)
 
         return {
@@ -59,17 +35,6 @@ class OverviewController:
         }
 
     def _calculate_revenue_metrics(self, transactions, selected_month, selected_year):
-        """
-        Calculate revenue-related metrics
-
-        Args:
-            transactions: List of transaction objects
-            selected_month: Selected month (1-12)
-            selected_year: Selected year
-
-        Returns:
-            dict: Revenue metrics including today's revenue, monthly revenue, etc.
-        """
         now = datetime.now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -116,15 +81,6 @@ class OverviewController:
         }
 
     def _get_transaction_date(self, transaction):
-        """
-        Extract date from transaction object
-
-        Args:
-            transaction: Transaction object
-
-        Returns:
-            datetime: Transaction date or None if not available
-        """
         try:
             if hasattr(transaction, 'created_at') and transaction.created_at:
                 return transaction.created_at
@@ -136,18 +92,6 @@ class OverviewController:
         return None
 
     def _calculate_top_products(self, transactions, selected_month, selected_year, limit=5):
-        """
-        Calculate top selling products by revenue for selected month
-
-        Args:
-            transactions: List of transaction objects
-            selected_month: Selected month (1-12)
-            selected_year: Selected year
-            limit: Maximum number of top products to return
-
-        Returns:
-            list: List of tuples (product_name, {quantity, revenue})
-        """
         # Start and end of selected month
         month_start = datetime(selected_year, selected_month, 1, 0, 0, 0)
 
@@ -193,15 +137,6 @@ class OverviewController:
         return top_products
 
     def _calculate_inventory_stats(self, products):
-        """
-        Calculate inventory statistics
-
-        Args:
-            products: List of product objects
-
-        Returns:
-            dict: Inventory statistics
-        """
         total_products = len(products)
         total_stock = sum(p.stock for p in products)
 
@@ -218,15 +153,6 @@ class OverviewController:
         }
 
     def _get_stock_alerts(self, products):
-        """
-        Generate stock alert messages
-
-        Args:
-            products: List of product objects
-
-        Returns:
-            list: List of alert message strings
-        """
         alerts = []
 
         # Get products sorted by stock level
@@ -267,15 +193,6 @@ class OverviewController:
         return alerts
 
     def get_revenue_trend(self, days=7):
-        """
-        Calculate revenue trend for the past N days
-
-        Args:
-            days: Number of days to analyze
-
-        Returns:
-            dict: Daily revenue data
-        """
         transactions = self.data_model.transactions
         now = datetime.now()
 
@@ -296,15 +213,6 @@ class OverviewController:
         return daily_revenue
 
     def get_product_performance(self, product_name):
-        """
-        Get detailed performance metrics for a specific product
-
-        Args:
-            product_name: Name of the product
-
-        Returns:
-            dict: Product performance metrics
-        """
         transactions = self.data_model.transactions
 
         total_quantity = 0

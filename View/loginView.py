@@ -1,7 +1,6 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QApplication
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QPixmap
-from View.colors import *
+import os
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import QPixmap
 from View.components import *
 
 
@@ -28,7 +27,8 @@ class LoginView(QWidget):
 
         # Logo
         logo_label = QLabel()
-        pixmap = QPixmap(r"C:\Users\kervy\Documents\Coding\T360Project\View\icons\T360logo.png")
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "Assets", "T360logo.png")
+        pixmap = QPixmap(icon_path)
         if not pixmap.isNull():
             scaled_pixmap = pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio,
                                           Qt.TransformationMode.SmoothTransformation)
@@ -118,13 +118,11 @@ class LoginView(QWidget):
         main_layout.addWidget(white_box)
 
     def showEvent(self, event):
-        """Center window on first show"""
         super().showEvent(event)
         if not event.spontaneous():
             self.center_on_screen()
 
     def center_on_screen(self):
-        """Center the window on the screen"""
         # Get the parent window (the actual main window, not just this widget)
         window = self.window()
         screen = window.screen().availableGeometry()
@@ -141,3 +139,17 @@ class LoginView(QWidget):
     def clear_fields(self):
         self.username_input.clear()
         self.password_input.clear()
+
+    def show_error(self, title, message):
+        """Display error message to user"""
+        QMessageBox.warning(self, title, message)
+
+    def show_question(self, title, message):
+        """Display question dialog and return user's choice"""
+        reply = QMessageBox.question(
+            self,
+            title,
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        return reply == QMessageBox.StandardButton.Yes

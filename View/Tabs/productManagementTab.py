@@ -1,15 +1,13 @@
+import os
+
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QFont, QColor
-from View.colors import *
-from View.components import *  # Import reusable components
+from PyQt6.QtGui import QColor, QPixmap, QIcon, QAction
+from View.components import *
 
 
 class ProductManagementTab(QWidget):
-    """Product Management tab - add, delete, and search products"""
-
     add_product_signal = pyqtSignal(str, float, int)
-    delete_product_signal = pyqtSignal(str)        # FIXED: was pyqtSignal(int) — product_id is "PR#####"
+    delete_product_signal = pyqtSignal(str)  # FIXED: was pyqtSignal(int) — product_id is "PR#####"
     search_products_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -21,7 +19,7 @@ class ProductManagementTab(QWidget):
         main_layout.setContentsMargins(25, 25, 25, 25)
         main_layout.setSpacing(20)
 
-        # Left side - Add Product (25%)
+        # Left side
         product_frame = CardFrame()
         product_layout = QVBoxLayout(product_frame)
         product_layout.setContentsMargins(20, 25, 20, 25)
@@ -65,15 +63,40 @@ class ProductManagementTab(QWidget):
         product_layout.addWidget(add_btn)
         product_layout.addStretch()
 
-        # Right side - Manage Products (75%)
+        # Right side
         view_frame = CardFrame()
         view_layout = QVBoxLayout(view_frame)
         view_layout.setContentsMargins(25, 25, 25, 25)
         view_layout.setSpacing(15)
 
-        view_layout.addWidget(SectionLabel("Manage Products", 18))
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(16)
 
-        self.search_input = SearchInput("🔍 Search products by name...")
+        #  Product Logo
+        logo_label = QLabel()
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "productLogo.svg")
+        pixmap = QPixmap(icon_path)
+        if not pixmap.isNull():
+            scaled_pixmap = pixmap.scaled(45, 45, Qt.AspectRatioMode.KeepAspectRatio,
+                                          Qt.TransformationMode.SmoothTransformation)
+            logo_label.setPixmap(scaled_pixmap)
+        header_layout.addWidget(logo_label)
+
+        header_layout.addWidget(SectionLabel("Manage Products", 18))
+
+        header_layout.addStretch()
+        view_layout.addLayout(header_layout)
+
+        # Search input with icon inside
+        self.search_input = SearchInput("Search products by name...")
+
+        # Add search icon INSIDE the input field
+        search_icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "searchIcon.svg")
+        search_icon = QIcon(search_icon_path)
+        search_action = QAction(search_icon, "", self.search_input)
+        self.search_input.addAction(search_action, QLineEdit.ActionPosition.LeadingPosition)
+
+        # Connect search signal
         self.search_input.textChanged.connect(
             lambda: self.search_products_signal.emit(self.search_input.text()))
         view_layout.addWidget(self.search_input)
@@ -101,7 +124,6 @@ class ProductManagementTab(QWidget):
             QMessageBox.warning(self, "Error", "Invalid price format. Please enter numbers only.")
 
     def update_products_table(self, products):
-        """Update the products table display"""
         self.products_table.setRowCount(len(products))
         for i, product in enumerate(products):
             # ID
@@ -131,7 +153,7 @@ class ProductManagementTab(QWidget):
             stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.products_table.setItem(i, 3, stock_item)
 
-            # Delete button — FIXED: use product.product_id explicitly (str)
+            # Delete button
             delete_btn = DeleteButton()
             delete_btn.clicked.connect(lambda checked, pid=product.product_id: self.delete_product_signal.emit(pid))
 

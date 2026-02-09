@@ -15,7 +15,7 @@ if __name__ == "__main__":
     login_view = LoginView()
     pos_view = mainPosView()
 
-    # Create Controller (UserManagementView and ProductManagementView are created inside)
+    # Create Controller
     controller = POSController(model, login_view, pos_view)
 
     # Run application

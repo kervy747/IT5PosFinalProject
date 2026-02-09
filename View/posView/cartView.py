@@ -1,8 +1,6 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QColor, QDoubleValidator
 from View.components import *
-
 
 class cartView(QWidget):
     remove_from_cart_signal = pyqtSignal(int)
@@ -23,7 +21,7 @@ class cartView(QWidget):
 
         # Cart table - larger to see items
         self.cart_table = StyledTable(4, ["Product", "Price", "Qty", "Total"])
-        self.cart_table.setMinimumHeight(250)  # Ensure table is visible
+        self.cart_table.setMinimumHeight(250)
         layout.addWidget(self.cart_table)
 
         # Total section - smaller
@@ -132,7 +130,6 @@ class cartView(QWidget):
         self.setLayout(layout)
 
     def calculate_change(self):
-        """Calculate and display change based on cash input - DISPLAY ONLY"""
         try:
             cash_text = self.cash_input.text().strip()
 
@@ -165,7 +162,6 @@ class cartView(QWidget):
         self.complete_sale_signal.emit()
 
     def update_cart(self, cart, total):
-        """Update cart display - DISPLAY ONLY"""
         self.current_total = total
         self.cart_table.setRowCount(len(cart))
         for i, item in enumerate(cart):
@@ -200,13 +196,11 @@ class cartView(QWidget):
         self.calculate_change()
 
     def on_remove_from_cart(self):
-        """Remove item from cart - just emit signal"""
         row = self.cart_table.currentRow()
         if row >= 0:
             self.remove_from_cart_signal.emit(row)
 
     def clear_cash_input(self):
-        """Clear cash input and change display"""
         self.cash_input.clear()
         self.change_label.setText("Change: ₱0.00")
         self.change_label.setStyleSheet(f"color: {ACCENT};")

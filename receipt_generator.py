@@ -1,47 +1,18 @@
-"""
-Receipt Generator Module
-Generates formatted receipt text files for transactions
-"""
 from datetime import datetime
 import os
 
 
 class ReceiptGenerator:
-    """Generates receipt text files for completed transactions"""
-
     def __init__(self, receipt_folder="receipts"):
-        """
-        Initialize receipt generator
-
-        Args:
-            receipt_folder: Folder to save receipts (default: "receipts")
-        """
         self.receipt_folder = receipt_folder
         self._ensure_receipt_folder_exists()
 
     def _ensure_receipt_folder_exists(self):
-        """Create receipts folder if it doesn't exist"""
         if not os.path.exists(self.receipt_folder):
             os.makedirs(self.receipt_folder)
             print(f"Created receipts folder: {self.receipt_folder}")
 
-    def generate_receipt(self, order_id, staff_name, cart_items, total_amount,
-                        cash_amount, change_amount, transaction_date=None):
-        """
-        Generate a formatted receipt and save to text file
-
-        Args:
-            order_id: Order ID (e.g., "OR0001")
-            staff_name: Name of staff who processed the sale
-            cart_items: List of cart items (CartItem objects)
-            total_amount: Total sale amount
-            cash_amount: Cash received
-            change_amount: Change given
-            transaction_date: Date/time of transaction (optional, defaults to now)
-
-        Returns:
-            tuple: (success: bool, filepath: str or error_message: str)
-        """
+    def generate_receipt(self, order_id, staff_name, cart_items, total_amount, cash_amount, change_amount, transaction_date=None):
         try:
             if transaction_date is None:
                 transaction_date = datetime.now().strftime("%m-%d-%Y %I:%M %p")
@@ -71,15 +42,7 @@ class ReceiptGenerator:
             traceback.print_exc()
             return False, error_msg
 
-    def _format_receipt(self, order_id, staff_name, cart_items, total_amount,
-                       cash_amount, change_amount, transaction_date):
-        """
-        Format receipt content with proper alignment.
-        Width auto-adjusts based on the longest product name so nothing gets cut.
-
-        Returns:
-            str: Formatted receipt text
-        """
+    def _format_receipt(self, order_id, staff_name, cart_items, total_amount, cash_amount, change_amount, transaction_date):
         # Dynamically calculate name column based on longest product name
         longest_name = max((len(item.product.name) for item in cart_items), default=20)
         name_col = max(longest_name + 2, 22)  # at least 22, or longest name + 2 padding
@@ -139,32 +102,19 @@ class ReceiptGenerator:
         return "\n".join(lines)
 
     def _center_text(self, text, width):
-        """Center text within given width"""
         return text.center(width)
 
     def _right_align(self, text, width):
-        """Right align text within given width"""
         return text.rjust(width)
 
     def _format_line(self, col1, col2, col3, col4, width):
-        """Format a line with 4 columns"""
         # Column widths: Item(20), Qty(5), Price(10), Total(10)
         return f"{col1:<20} {col2:>5} {col3:>10} {col4:>10}"
 
     def _format_item_line(self, name, qty, price, total, width):
-        """Format an item line"""
         return f"{name:<20} {qty:>5} {price:>10} {total:>10}"
 
     def open_receipt(self, filepath):
-        """
-        Open receipt file with default text editor
-
-        Args:
-            filepath: Path to receipt file
-
-        Returns:
-            bool: Success status
-        """
         try:
             import platform
             import subprocess
@@ -182,52 +132,3 @@ class ReceiptGenerator:
         except Exception as e:
             print(f"Error opening receipt: {e}")
             return False
-
-
-# Example usage:
-if __name__ == "__main__":
-    # For testing
-    class MockProduct:
-        def __init__(self, product_id, name, price):
-            self.product_id = product_id
-            self.name = name
-            self.price = price
-
-    class MockCartItem:
-        def __init__(self, product, quantity):
-            self.product = product
-            self.quantity = quantity
-
-        def get_total(self):
-            return self.product.price * self.quantity
-
-    # Test data
-    items = [
-        MockCartItem(MockProduct("PR00001", "Intel Core i9-14900K CPU", 32999.00), 1),
-        MockCartItem(MockProduct("PR00005", "Corsair Vengeance 32GB DDR5 RAM", 7299.00), 2),
-        MockCartItem(MockProduct("PR00010", "EVGA SuperNOVA 850W PSU", 7349.00), 1),
-    ]
-
-    total = sum(item.get_total() for item in items)
-    cash = 60000.00
-    change = cash - total
-
-    # Generate receipt
-    generator = ReceiptGenerator()
-    success, result = generator.generate_receipt(
-        order_id="OR0001",
-        staff_name="admin",
-        cart_items=items,
-        total_amount=total,
-        cash_amount=cash,
-        change_amount=change
-    )
-
-    if success:
-        print(f"\n✓ Receipt generated successfully!")
-        print(f"File: {result}")
-
-        # Optionally open it
-        generator.open_receipt(result)
-    else:
-        print(f"\n✗ Failed to generate receipt: {result}")

@@ -1,6 +1,6 @@
+import os
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QPixmap, QIcon, QAction
 from View.components import *
 from .detailsDialog import TransactionDetailsDialog
 
@@ -23,11 +23,37 @@ class TransactionsTab(QWidget):
         card_layout.setContentsMargins(25, 25, 25, 25)
         card_layout.setSpacing(15)
 
-        card_layout.addWidget(SectionLabel("Transaction History", 18))
+        # Header with logo and title
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(12)
 
-        self.search_input = SearchInput("🔍 Search by Order ID or Staff Name...")
+        # Transaction Logo
+        logo_label = QLabel()
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "Assets", "transactionLogo.svg")
+        pixmap = QPixmap(icon_path)
+        if not pixmap.isNull():
+            scaled_pixmap = pixmap.scaled(40, 40, Qt.AspectRatioMode.KeepAspectRatio,
+                                          Qt.TransformationMode.SmoothTransformation)
+            logo_label.setPixmap(scaled_pixmap)
+        header_layout.addWidget(logo_label)
+
+        header_layout.addWidget(SectionLabel("Transaction History", 18))
+        header_layout.addStretch()
+        card_layout.addLayout(header_layout)
+
+        # Search input with icon inside
+        self.search_input = SearchInput("Search by Order ID or Staff Name...")
+
+        # Add search icon INSIDE the input field
+        search_icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "Assets", "searchIcon.svg")
+        search_icon = QIcon(search_icon_path)
+        search_action = QAction(search_icon, "", self.search_input)
+        self.search_input.addAction(search_action, QLineEdit.ActionPosition.LeadingPosition)
+
+        # Connect search signal
         self.search_input.textChanged.connect(
             lambda: self.search_transactions_signal.emit(self.search_input.text()))
+
         card_layout.addWidget(self.search_input)
 
         # Transactions table
@@ -40,12 +66,10 @@ class TransactionsTab(QWidget):
         layout.addWidget(main_card)
 
     def show_transaction_details(self, transaction):
-        """Show detailed transaction dialog"""
         dialog = TransactionDetailsDialog(transaction, self)
         dialog.exec()
 
     def update_transactions_table(self, transactions):
-        """Update the transactions table display"""
         self.transactions_table.setRowCount(len(transactions))
         for i, transaction in enumerate(transactions):
             # Order ID

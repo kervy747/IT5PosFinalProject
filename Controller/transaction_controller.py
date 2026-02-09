@@ -1,30 +1,20 @@
-"""
-Transaction Controller
-Handles transaction viewing and management
-"""
 from PyQt6.QtWidgets import QMessageBox
 
-
 class TransactionController:
-    """Handles transaction operations"""
-
     def __init__(self, main_controller):
         self.main = main_controller
         self.model = main_controller.model
         self.main_window = main_controller.main_window
 
     def handle_view_transactions(self):
-        """Show transaction history"""
         self.main.transaction_view.update_transactions_table(self.model.transactions)
         self.main.stack.setCurrentWidget(self.main.transaction_view)
 
     def handle_search_transactions(self, search_term):
-        """Search transactions"""
         filtered_transactions = self.model.search_transactions(search_term)
         self.main.admin_tabbed_view.update_transactions_table(filtered_transactions)
 
     def handle_delete_transaction(self, order_id):
-        """Handle transaction deletion with confirmation"""
         reply = QMessageBox.question(
             self.main_window,
             "Confirm Delete",

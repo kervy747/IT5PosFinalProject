@@ -1,15 +1,37 @@
 from PyQt6.QtWidgets import QPushButton, QLineEdit, QTableWidget, QHeaderView, QFrame, QLabel, QComboBox, QHBoxLayout, \
-    QVBoxLayout
+    QWidget, QLayout
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QCursor
+from PyQt6.QtGui import QFont
 from View.colors import *
+
+# ============= UTILITY FUNCTIONS =============
+
+def remove_margins_spacing(layout_or_widget):
+    if isinstance(layout_or_widget, QLayout):
+        # Remove margins and spacing from the layout
+        layout_or_widget.setContentsMargins(0, 0, 0, 0)
+        layout_or_widget.setSpacing(0)
+
+        # Process all items in the layout
+        for i in range(layout_or_widget.count()):
+            item = layout_or_widget.itemAt(i)
+            if item.widget():
+                remove_margins_spacing(item.widget())
+            elif item.layout():
+                remove_margins_spacing(item.layout())
+
+    elif isinstance(layout_or_widget, QWidget):
+        # Remove widget margins
+        layout_or_widget.setContentsMargins(0, 0, 0, 0)
+
+        # Process the widget's layout if it has one
+        if layout_or_widget.layout():
+            remove_margins_spacing(layout_or_widget.layout())
 
 
 # ============= BUTTONS =============
 
 class PrimaryButton(QPushButton):
-    """Primary action button (teal)"""
-
     def __init__(self, text, icon=""):
         super().__init__(f"{icon} {text}" if icon else text)
         self.setFont(QFont("Poppins", 10, QFont.Weight.Bold))
@@ -23,6 +45,7 @@ class PrimaryButton(QPushButton):
                 font-family: Poppins;
                 font-weight: bold;
                 border: none;
+                margin: 0px;
             }}
             QPushButton:hover {{
                 background-color: #005662;
@@ -32,10 +55,7 @@ class PrimaryButton(QPushButton):
             }}
         """)
 
-
 class DeleteButton(QPushButton):
-    """Delete button (red)"""
-
     def __init__(self, text="Delete"):
         super().__init__(text)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -51,6 +71,7 @@ class DeleteButton(QPushButton):
                 font-size: 9pt;
                 font-weight: bold;
                 border: none;
+                margin: 0px;
             }
             QPushButton:hover {
                 background-color: #D62828;
@@ -60,10 +81,33 @@ class DeleteButton(QPushButton):
             }
         """)
 
+class ReactivateButton(QPushButton):
+    def __init__(self, text="Reactivate"):
+        super().__init__(text)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(40)
+        self.setMinimumWidth(120)
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                padding: 1px 1px;
+                border-radius: 6px;
+                font-family: Poppins;
+                font-size: 9pt;
+                font-weight: bold;
+                border: none;
+                margin: 0px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+            QPushButton:pressed {
+                background-color: #1e7e34;
+            }
+        """)
 
 class ViewButton(QPushButton):
-    """View/Details button"""
-
     def __init__(self, text="View Details"):
         super().__init__(text)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -79,6 +123,7 @@ class ViewButton(QPushButton):
                 font-size: 9pt;
                 font-weight: bold;
                 border: none;
+                margin: 0px;
             }}
             QPushButton:hover {{
                 background-color: #005662;
@@ -88,12 +133,9 @@ class ViewButton(QPushButton):
             }}
         """)
 
-
 # ============= INPUT FIELDS =============
 
 class StyledInput(QLineEdit):
-    """Styled input field"""
-
     def __init__(self, placeholder=""):
         super().__init__()
         self.setPlaceholderText(placeholder)
@@ -106,6 +148,7 @@ class StyledInput(QLineEdit):
                 background-color: #F8FAFB; 
                 border: 2px solid #E1E8ED; 
                 border-radius: 8px;
+                margin: 0px;
             }
             QLineEdit:focus {
                 border: 2px solid #006D77;
@@ -113,10 +156,7 @@ class StyledInput(QLineEdit):
             }
         """)
 
-
 class StyledComboBox(QComboBox):
-    """Styled combo box / dropdown"""
-
     def __init__(self):
         super().__init__()
         self.setStyleSheet("""
@@ -128,6 +168,7 @@ class StyledComboBox(QComboBox):
                 background-color: #F8FAFB; 
                 border: 2px solid #E1E8ED; 
                 border-radius: 8px;
+                margin: 0px;
             }
             QComboBox:focus {
                 border: 2px solid #006D77;
@@ -156,7 +197,6 @@ class StyledComboBox(QComboBox):
             }
         """)
 
-
 class SearchInput(QLineEdit):
     """Search input field with icon"""
 
@@ -172,13 +212,13 @@ class SearchInput(QLineEdit):
                 background-color: #F8FAFB; 
                 border: 2px solid #E1E8ED; 
                 border-radius: 8px;
+                margin: 0px;
             }
             QLineEdit:focus {
                 border: 2px solid #006D77;
                 background-color: white;
             }
         """)
-
 
 # ============= TABLES =============
 
@@ -208,6 +248,8 @@ class StyledTable(QTableWidget):
                 font-family: Poppins;
                 font-size: 10pt;
                 gridline-color: #E8F4F5;
+                border: none;
+                margin: 0px;
             }}
             QTableWidget::item {{
                 padding: 8px;
@@ -243,8 +285,6 @@ class StyledTable(QTableWidget):
 # ============= CONTAINERS =============
 
 class CardFrame(QFrame):
-    """White card container"""
-
     def __init__(self):
         super().__init__()
         self.setStyleSheet("""
@@ -252,13 +292,11 @@ class CardFrame(QFrame):
                 background-color: white;
                 border-radius: 12px;
                 border: 1px solid #E8F4F5;
+                margin: 0px;
             }
         """)
 
-
 class HeaderFrame(QFrame):
-    """Header container with white background"""
-
     def __init__(self):
         super().__init__()
         self.setStyleSheet(f"""
@@ -267,13 +305,11 @@ class HeaderFrame(QFrame):
                 border-radius: 12px;
                 padding: 15px 25px;
                 border: 1px solid #E8F4F5;
+                margin: 0px;
             }}
         """)
 
-
 class TotalCard(QFrame):
-    """Total amount card for POS"""
-
     def __init__(self):
         super().__init__()
         self.setStyleSheet(f"""
@@ -281,53 +317,41 @@ class TotalCard(QFrame):
                 background-color: {PRIMARY};
                 border-radius: 10px;
                 padding: 12px;
+                border: none;
+                margin: 0px;
             }}
         """)
 
-
 class SectionLabel(QLabel):
-    """Section title label"""
 
     def __init__(self, text, size=16):
         super().__init__(text)
         self.setFont(QFont("Poppins", size, QFont.Weight.Bold))
-        self.setStyleSheet(f"color: {PRIMARY};")
+        self.setStyleSheet(f"color: {PRIMARY}; margin: 0px; border: none;")
 
 
 class SubtitleLabel(QLabel):
-    """Subtitle/description label"""
 
     def __init__(self, text):
         super().__init__(text)
         self.setFont(QFont("Poppins", 9))
-        self.setStyleSheet("color: #6c757d;")
+        self.setStyleSheet("color: #6c757d; margin: 0px; border: none;")
         self.setWordWrap(True)
 
 
 class FieldLabel(QLabel):
-    """Form field label"""
 
     def __init__(self, text):
         super().__init__(text)
         self.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
-        self.setStyleSheet("color: #2c3e50;")
+        self.setStyleSheet("color: #2c3e50; margin: 0px; border: none;")
 
-
-# ============= MONTH/YEAR SELECTOR =============
 
 class MonthYearSelector(QFrame):
-    """Month and year dropdown selector widget"""
-
     # Signal emitted when month/year changes
     month_changed = pyqtSignal(int, int)  # month, year
 
     def __init__(self, start_year=2020):
-        """
-        Initialize the month/year selector
-
-        Args:
-            start_year: Earliest year to show in dropdown (default: 2020)
-        """
         super().__init__()
         from datetime import datetime
 
@@ -350,6 +374,7 @@ class MonthYearSelector(QFrame):
                 background-color: {WHITE};
                 border-radius: 10px;
                 border: 1px solid #E8F4F5;
+                margin: 0px;
             }}
         """)
 
@@ -360,7 +385,7 @@ class MonthYearSelector(QFrame):
         # Calendar icon label
         icon_label = QLabel("📅")
         icon_label.setFont(QFont("Segoe UI Emoji", 16))
-        icon_label.setStyleSheet("background: transparent;")
+        icon_label.setStyleSheet("background: transparent; margin: 0px; border: none;")
         layout.addWidget(icon_label)
 
         # Month dropdown
@@ -379,6 +404,7 @@ class MonthYearSelector(QFrame):
                 background-color: {BACKGROUND};
                 border: 2px solid #E1E8ED;
                 border-radius: 8px;
+                margin: 0px;
             }}
             QComboBox:hover {{
                 border: 2px solid {PRIMARY};
@@ -432,6 +458,7 @@ class MonthYearSelector(QFrame):
                 background-color: {BACKGROUND};
                 border: 2px solid #E1E8ED;
                 border-radius: 8px;
+                margin: 0px;
             }}
             QComboBox:hover {{
                 border: 2px solid {PRIMARY};
@@ -478,6 +505,7 @@ class MonthYearSelector(QFrame):
                 border: none;
                 border-radius: 8px;
                 padding: 8px 16px;
+                margin: 0px;
             }}
             QPushButton:hover {{
                 background-color: {PRIMARY};
@@ -490,14 +518,12 @@ class MonthYearSelector(QFrame):
         layout.addWidget(self.current_btn)
 
     def on_selection_changed(self):
-        """Handle dropdown selection change"""
         selected_month = self.month_combo.currentIndex() + 1  # Convert to 1-12
         selected_year = int(self.year_combo.currentText())
 
         self.month_changed.emit(selected_month, selected_year)
 
     def set_current_date(self):
-        """Set selectors to current month and year"""
         current_month = self.current_date.month
         current_year = self.current_date.year
 
@@ -518,24 +544,11 @@ class MonthYearSelector(QFrame):
         self.month_changed.emit(current_month, current_year)
 
     def get_selected_month(self):
-        """
-        Get currently selected month and year
-
-        Returns:
-            tuple: (month, year) where month is 1-12
-        """
         month = self.month_combo.currentIndex() + 1
         year = int(self.year_combo.currentText())
         return month, year
 
     def set_month_year(self, month, year):
-        """
-        Set specific month and year
-
-        Args:
-            month: Month to set (1-12)
-            year: Year to set
-        """
         # Block signals to prevent duplicate emissions
         self.month_combo.blockSignals(True)
         self.year_combo.blockSignals(True)

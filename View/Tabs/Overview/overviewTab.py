@@ -1,28 +1,18 @@
+import os
+
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
-from View.colors import *
+from PyQt6.QtGui import QPixmap
 from View.components import *
 from .statCard import StatCard
 from .topProductCard import TopProductCard
 
-
 class OverviewTab(QWidget):
-    """Modern POS Dashboard Overview - View Only (Pure View Component)"""
-
     def __init__(self, overview_controller):
-        """
-        Initialize the overview tab
-
-        Args:
-            overview_controller: Instance of OverviewController for business logic
-        """
         super().__init__()
         self.controller = overview_controller
         self.init_ui()
 
     def init_ui(self):
-        """Initialize the user interface"""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(24)
@@ -31,8 +21,18 @@ class OverviewTab(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setSpacing(16)
 
+        # Dashboard Logo
+        logo_label = QLabel()
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "Assets", "overviewLogo.svg")
+        pixmap = QPixmap(icon_path)
+        if not pixmap.isNull():
+            scaled_pixmap = pixmap.scaled(35, 35, Qt.AspectRatioMode.KeepAspectRatio,
+                                          Qt.TransformationMode.SmoothTransformation)
+            logo_label.setPixmap(scaled_pixmap)
+        header_layout.addWidget(logo_label)
+
         # Dashboard title
-        dashboard_title = QLabel("📊 Dashboard Overview")
+        dashboard_title = QLabel("Dashboard Overview")
         dashboard_title.setFont(QFont("Poppins", 20, QFont.Weight.Bold))
         dashboard_title.setStyleSheet(f"color: {PRIMARY};")
         header_layout.addWidget(dashboard_title)
@@ -187,17 +187,6 @@ class OverviewTab(QWidget):
         main_layout.addLayout(content_layout)
 
     def _create_mini_stat(self, label, value, color):
-        """
-        Create mini stat widget
-
-        Args:
-            label: Label for the stat
-            value: Initial value
-            color: Color for the stat
-
-        Returns:
-            QFrame: The stat widget
-        """
         container = QFrame()
         container.setStyleSheet(f"""
             QFrame {{
@@ -227,23 +216,9 @@ class OverviewTab(QWidget):
         return container
 
     def on_month_changed(self, month, year):
-        """
-        Handle month selection change
-
-        Args:
-            month: Selected month (1-12)
-            year: Selected year
-        """
         self.update_overview(month, year)
 
     def update_overview(self, selected_month=None, selected_year=None):
-        """
-        Update dashboard with latest data from controller
-
-        Args:
-            selected_month: Optional month to display (1-12)
-            selected_year: Optional year to display
-        """
         try:
             # Get all data from controller
             dashboard_data = self.controller.get_dashboard_data(
@@ -278,24 +253,12 @@ class OverviewTab(QWidget):
             traceback.print_exc()
 
     def _update_revenue_metrics(self, metrics):
-        """
-        Update revenue stat cards
-
-        Args:
-            metrics: Dictionary containing revenue metrics
-        """
         self.revenue_card.update_value(f"₱{metrics['today_revenue']:,.2f}")
         self.monthly_card.update_value(f"₱{metrics['monthly_revenue']:,.2f}")
         self.transactions_card.update_value(str(metrics['monthly_transactions']))
         self.avg_card.update_value(f"₱{metrics['avg_transaction']:,.2f}")
 
     def _update_top_products(self, top_products):
-        """
-        Update top products list
-
-        Args:
-            top_products: List of (product_name, data_dict) tuples
-        """
         # Clear existing products
         while self.products_list_layout.count():
             child = self.products_list_layout.takeAt(0)
@@ -316,37 +279,18 @@ class OverviewTab(QWidget):
         self.products_list_layout.addStretch()
 
     def _update_inventory_stats(self, stats):
-        """
-        Update inventory statistics
-
-        Args:
-            stats: Dictionary containing inventory statistics
-        """
         self._update_mini_stat(self.total_products_widget, str(stats['total_products']))
         self._update_mini_stat(self.total_stock_widget, str(stats['total_stock']))
         self._update_mini_stat(self.low_stock_widget, str(stats['low_stock_count']))
         self._update_mini_stat(self.out_stock_widget, str(stats['out_of_stock_count']))
 
     def _update_stock_alerts(self, alerts):
-        """
-        Update stock alerts list
-
-        Args:
-            alerts: List of alert dictionaries
-        """
         self.alert_list.clear()
 
         for alert in alerts:
             self.alert_list.addItem(f"{alert['icon']} {alert['message']}")
 
     def _update_mini_stat(self, widget, value):
-        """
-        Update mini stat value
-
-        Args:
-            widget: The stat widget to update
-            value: New value to display
-        """
         for child in widget.findChildren(QLabel):
             if child.objectName().endswith('_value'):
                 child.setText(value)

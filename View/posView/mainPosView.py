@@ -1,9 +1,7 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from View.components import *
 from View.posView.cartView import cartView
-
 
 class mainPosView(QWidget):
     add_to_cart_signal = pyqtSignal(str, int)  # product_id (str), quantity (int)
@@ -18,8 +16,6 @@ class mainPosView(QWidget):
         self.cart_view = cartView()
         self.init_ui()
 
-
-
     def init_ui(self):
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(25, 25, 25, 25)
@@ -31,7 +27,7 @@ class mainPosView(QWidget):
 
         # Logo and title
         logo_label = QLabel()
-        pixmap = QPixmap(r"C:\Users\kervy\Documents\Coding\T360Project\View\icons\T360logo.png")
+        pixmap = QPixmap(r"C:\Users\kervy\Documents\Coding\IT5FinalProject\Assets\T360logo.png")
         if not pixmap.isNull():
             scaled_pixmap = pixmap.scaled(45, 45, Qt.AspectRatioMode.KeepAspectRatio,
                                           Qt.TransformationMode.SmoothTransformation)
@@ -148,10 +144,6 @@ class mainPosView(QWidget):
         self.setLayout(main_layout)
 
     def update_products(self, products):
-        """
-        ✅ FIXED: Just display products, no filtering logic
-        Controller should pass already-filtered products
-        """
         self.products_table.setRowCount(len(products))
 
         for i, product in enumerate(products):
@@ -240,7 +232,6 @@ class mainPosView(QWidget):
             self.show_no_products_message()
 
     def show_no_products_message(self):
-        """Display a message when there are no products in stock"""
         # Clear the table
         self.products_table.setRowCount(1)
 
@@ -258,11 +249,9 @@ class mainPosView(QWidget):
         self.products_table.setRowHeight(0, 100)
 
     def update_cart(self, cart, total):
-        """Delegate to CartView"""
         self.cart_view.update_cart(cart, total)
 
     def highlight_selected_row(self):
-        """Highlight the entire row including widget cells when selected"""
         # Reset all row backgrounds first
         for row in range(self.products_table.rowCount()):
             qty_widget = self.products_table.cellWidget(row, 4)
@@ -322,7 +311,6 @@ class mainPosView(QWidget):
                     """)
 
     def on_add_to_cart(self):
-        """Just emit signal with data - no validation"""
         row = self.products_table.currentRow()
         if row >= 0:
             # Check if this is the "no products" message row

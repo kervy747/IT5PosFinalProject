@@ -1,7 +1,3 @@
-"""
-Main Controller
-Coordinates all sub-controllers and initializes the application
-"""
 from PyQt6.QtWidgets import QMainWindow, QStackedWidget
 from PyQt6.QtGui import QPalette, QColor
 from View.colors import *
@@ -15,7 +11,20 @@ from .transaction_controller import TransactionController
 
 
 class POSController:
-    """Main controller that coordinates all sub-controllers"""
+    """
+    Main controller that coordinates all sub-controllers.
+
+    Responsibilities:
+    - Initialize and manage the main window
+    - Coordinate between sub-controllers
+    - Handle view navigation/switching
+    - Connect view signals to appropriate controller handlers
+
+    Does NOT:
+    - Contain business logic (delegated to sub-controllers)
+    - Directly manipulate data (delegated to Model)
+    - Show UI dialogs (delegated to Views)
+    """
 
     def __init__(self, model, login_view, pos_view):
         self.model = model
@@ -53,17 +62,17 @@ class POSController:
         self._connect_signals()
 
     def _connect_signals(self):
-        """Connect all view signals to appropriate controller methods"""
+        """Connect view signals to controller handlers"""
 
-        # === Login View Signals ===
+        # Authentication signals
         self.login_view.login_signal.connect(self.auth.handle_login)
-
-        # === Admin Tabbed View Signals ===
         self.admin_tabbed_view.logout_signal.connect(self.auth.handle_logout)
+        self.pos_view.logout_signal.connect(self.auth.handle_logout)
 
         # User management signals
         self.admin_tabbed_view.add_user_signal.connect(self.user.handle_add_user)
         self.admin_tabbed_view.delete_user_signal.connect(self.user.handle_delete_user)
+        self.admin_tabbed_view.reactivate_user_signal.connect(self.user.handle_reactivate_user)
         self.admin_tabbed_view.search_users_signal.connect(self.user.handle_search_users)
 
         # Product management signals
@@ -71,32 +80,56 @@ class POSController:
         self.admin_tabbed_view.delete_product_signal.connect(self.product.handle_delete_product)
         self.admin_tabbed_view.search_products_signal.connect(self.product.handle_search_products)
 
-        # Transaction signals (search only, no delete)
+        # Transaction management signals
         self.admin_tabbed_view.search_transactions_signal.connect(self.transaction.handle_search_transactions)
+        # Add this if you have delete transaction functionality in your view:
+        # self.admin_tabbed_view.delete_transaction_signal.connect(self.transaction.handle_delete_transaction)
 
-        # === POS View Signals (Staff Only Access) ===
+        # POS operation signals
         self.pos_view.add_to_cart_signal.connect(self.pos_ops.handle_add_to_cart)
         self.pos_view.remove_from_cart_signal.connect(self.pos_ops.handle_remove_from_cart)
         self.pos_view.complete_sale_signal.connect(self.pos_ops.handle_complete_sale)
-        self.pos_view.logout_signal.connect(self.auth.handle_logout)
 
     def show_admin_dashboard(self):
-        """Show admin dashboard with overview tab by default"""
-        # Update all data
+        """
+        Navigate to admin dashboard and refresh all data.
+        Called after successful admin login or when returning to dashboard.
+        """
+        # Update all dashboard views with current data
         self.admin_tabbed_view.update_overview()
-        # FIXED: pass current_username so the tab can disable self-delete
+
+        # Get current username for display (None-safe)
+        current_username = self.model.current_user.username if self.model.current_user else None
+
         self.admin_tabbed_view.update_users_table(
             self.model.users,
-            self.model.current_user.username if self.model.current_user else None
+            current_username
         )
         self.admin_tabbed_view.update_products_table(self.model.products)
         self.admin_tabbed_view.update_transactions_table(self.model.transactions)
 
-        # Set to overview tab (index 0)
+        # Show overview tab by default
         self.admin_tabbed_view.tab_widget.setCurrentIndex(0)
 
-        # Show the view
+        # Switch to admin dashboard view
         self.stack.setCurrentWidget(self.admin_tabbed_view)
+
+    def show_pos_view(self):
+        """
+        Navigate to POS view and refresh data.
+        Called after successful staff login or when returning to POS.
+        """
+        self.pos_view.update_products(self.model.products)
+        self.pos_view.update_cart(self.model.cart, self.model.get_cart_total())
+        self.stack.setCurrentWidget(self.pos_view)
+
+    def show_login_view(self):
+        """
+        Navigate to login view.
+        Called after logout or on application start.
+        """
+        self.login_view.clear_fields()
+        self.stack.setCurrentWidget(self.login_view)
 
     def run(self):
         """Start the application"""

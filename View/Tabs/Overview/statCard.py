@@ -5,7 +5,6 @@ from View.colors import *
 
 
 class StatCard(QFrame):
-    """Modern statistic card with icon and trend indicator"""
 
     def __init__(self, title, value, icon="", trend=None, color=PRIMARY):
         super().__init__()
