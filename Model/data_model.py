@@ -5,6 +5,7 @@ from .user import User
 from .product import Product
 from .cart import CartItem
 from .transaction import Transaction
+import bcrypt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Controller.db import get_connection
@@ -166,30 +167,54 @@ class DataModel:
 
     def authenticate(self, username, password):
         for user in self.users:
-            if user.username == username and user.password == password:
-                # Check if user is active
+            if user.username == username:
                 if user.active == 0:
-                    return False  # User is deactivated
-                self.current_user = user
-                return True
+                    return False
+
+                try:
+                    if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+                        self.current_user = user
+                        return True
+                except (ValueError, AttributeError):
+                    if user.password == password:
+                        self.current_user = user
+                        return True
+                return False
         return False
+
+    def _upgrade_password_to_hash(self, username, password):
+        try:
+            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE users SET password = %s WHERE username = %s",
+                (hashed.decode('utf-8'), username)
+            )
+            conn.commit()
+            conn.close()
+            self.load_users()
+        except Exception as e:
+            print(f"Error upgrading password: {e}")
 
     def add_user(self, username, password, role):
         if any(u.username == username for u in self.users):
             return False
 
         try:
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             conn = get_connection()
             cur = conn.cursor()
             cur.execute(
                 "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
-                (username, password, role)
+                (username, hashed_password.decode('utf-8'), role)  # Store as string
             )
             conn.commit()
             conn.close()
             self.load_users()
             return True
         except Exception as e:
+            print(f"Error adding user: {e}")
             return False
 
     def deactivate_user(self, username):
@@ -295,9 +320,9 @@ class DataModel:
             return False
         for item in self.cart:
             if item.product.product_id == product.product_id:
-                if item.quantity + quantity > product.stock:
+                if quantity > product.stock:
                     return False
-                item.quantity += quantity
+                item.quantity = quantity  # ← CHANGED: Replace instead of add
                 return True
         self.cart.append(CartItem(product, quantity))
         return True

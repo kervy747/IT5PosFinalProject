@@ -4,7 +4,7 @@ from View.components import *
 
 class cartView(QWidget):
     remove_from_cart_signal = pyqtSignal(int)
-    complete_sale_signal = pyqtSignal()  # ✅ Just emit signal, no validation
+    complete_sale_signal = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -16,28 +16,25 @@ class cartView(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # Cart header
-        layout.addWidget(SectionLabel("Shopping Cart", 18))
+        cart_label = SectionLabel("Shopping Cart", 16)
+        layout.addWidget(cart_label)
 
-        # Cart table - larger to see items
         self.cart_table = StyledTable(4, ["Product", "Price", "Qty", "Total"])
         self.cart_table.setMinimumHeight(250)
         layout.addWidget(self.cart_table)
 
-        # Total section - smaller
         total_frame = TotalCard()
         total_layout = QVBoxLayout(total_frame)
-        total_layout.setContentsMargins(10, 8, 10, 8)
+        total_layout.setContentsMargins(10, 6, 10, 6)
 
         self.total_label = QLabel("Total: ₱0.00")
-        self.total_label.setFont(QFont("Poppins", 16, QFont.Weight.Bold))
+        self.total_label.setFont(QFont("Poppins", 14, QFont.Weight.Bold))
         self.total_label.setStyleSheet("color: white;")
         self.total_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         total_layout.addWidget(self.total_label)
 
         layout.addWidget(total_frame)
 
-        # Cash input section
         cash_frame = CardFrame()
         cash_layout = QVBoxLayout(cash_frame)
         cash_layout.setContentsMargins(15, 12, 15, 12)
@@ -68,7 +65,6 @@ class cartView(QWidget):
         """)
         cash_layout.addWidget(self.cash_input)
 
-        # Change label
         self.change_label = QLabel("Change: ₱0.00")
         self.change_label.setFont(QFont("Poppins", 14, QFont.Weight.Bold))
         self.change_label.setStyleSheet(f"color: {ACCENT};")
@@ -77,7 +73,6 @@ class cartView(QWidget):
 
         layout.addWidget(cash_frame)
 
-        # Buttons
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(10)
 
@@ -165,27 +160,23 @@ class cartView(QWidget):
         self.current_total = total
         self.cart_table.setRowCount(len(cart))
         for i, item in enumerate(cart):
-            # Product name
             product_item = QTableWidgetItem(item.product.name)
             product_item.setForeground(QColor("#2c3e50"))
             product_item.setFont(QFont("Poppins", 10))
             self.cart_table.setItem(i, 0, product_item)
 
-            # Price
             price_item = QTableWidgetItem(f"₱{item.product.price:,.2f}")
             price_item.setForeground(QColor("#006D77"))
             price_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold))
             price_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.cart_table.setItem(i, 1, price_item)
 
-            # Quantity
             qty_item = QTableWidgetItem(str(item.quantity))
             qty_item.setForeground(QColor("#2c3e50"))
             qty_item.setFont(QFont("Poppins", 10))
             qty_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.cart_table.setItem(i, 2, qty_item)
 
-            # Total
             total_item = QTableWidgetItem(f"₱{item.get_total():,.2f}")
             total_item.setForeground(QColor("#006D77"))
             total_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold))

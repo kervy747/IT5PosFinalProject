@@ -2,7 +2,6 @@ from PyQt6.QtWidgets import QMainWindow, QStackedWidget
 from PyQt6.QtGui import QPalette, QColor
 from View.colors import *
 from View.adminTabbedView import AdminTabbedView
-
 from .auth_controller import AuthController
 from .user_controller import UserController
 from .product_controller import ProductController
@@ -11,21 +10,6 @@ from .transaction_controller import TransactionController
 
 
 class POSController:
-    """
-    Main controller that coordinates all sub-controllers.
-
-    Responsibilities:
-    - Initialize and manage the main window
-    - Coordinate between sub-controllers
-    - Handle view navigation/switching
-    - Connect view signals to appropriate controller handlers
-
-    Does NOT:
-    - Contain business logic (delegated to sub-controllers)
-    - Directly manipulate data (delegated to Model)
-    - Show UI dialogs (delegated to Views)
-    """
-
     def __init__(self, model, login_view, pos_view):
         self.model = model
 
@@ -62,8 +46,6 @@ class POSController:
         self._connect_signals()
 
     def _connect_signals(self):
-        """Connect view signals to controller handlers"""
-
         # Authentication signals
         self.login_view.login_signal.connect(self.auth.handle_login)
         self.admin_tabbed_view.logout_signal.connect(self.auth.handle_logout)
@@ -91,10 +73,6 @@ class POSController:
         self.pos_view.complete_sale_signal.connect(self.pos_ops.handle_complete_sale)
 
     def show_admin_dashboard(self):
-        """
-        Navigate to admin dashboard and refresh all data.
-        Called after successful admin login or when returning to dashboard.
-        """
         # Update all dashboard views with current data
         self.admin_tabbed_view.update_overview()
 
@@ -115,22 +93,13 @@ class POSController:
         self.stack.setCurrentWidget(self.admin_tabbed_view)
 
     def show_pos_view(self):
-        """
-        Navigate to POS view and refresh data.
-        Called after successful staff login or when returning to POS.
-        """
         self.pos_view.update_products(self.model.products)
         self.pos_view.update_cart(self.model.cart, self.model.get_cart_total())
         self.stack.setCurrentWidget(self.pos_view)
 
     def show_login_view(self):
-        """
-        Navigate to login view.
-        Called after logout or on application start.
-        """
         self.login_view.clear_fields()
         self.stack.setCurrentWidget(self.login_view)
 
     def run(self):
-        """Start the application"""
         self.main_window.show()

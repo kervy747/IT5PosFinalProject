@@ -2,20 +2,6 @@ from PyQt6.QtWidgets import QMessageBox
 
 
 class AuthController:
-    """
-    Handles authentication logic and user session management.
-
-    Responsibilities:
-    - Process login attempts
-    - Manage user sessions
-    - Handle logout flow
-    - Route users to appropriate views based on role
-
-    Does NOT:
-    - Show UI dialogs (Views handle this)
-    - Directly manipulate widgets (uses View methods)
-    """
-
     def __init__(self, main_controller):
         self.main = main_controller
         self.model = main_controller.model
@@ -24,13 +10,6 @@ class AuthController:
         self.current_user = None
 
     def handle_login(self, username, password):
-        """
-        Process login attempt and route user to appropriate view.
-
-        Args:
-            username: User's username
-            password: User's password
-        """
         # Authenticate with model
         if self.model.authenticate(username, password):
             self.current_user = self.model.current_user
@@ -57,11 +36,6 @@ class AuthController:
             )
 
     def handle_logout(self):
-        """
-        Handle logout request.
-        Shows confirmation dialog and completes logout if user confirms.
-        """
-        # Get the view that triggered logout (could be admin or POS view)
         current_view = self.stack.currentWidget()
 
         # Show confirmation dialog
@@ -82,22 +56,10 @@ class AuthController:
             self.main.show_login_view()
 
     def get_current_username(self):
-        """
-        Get current user's username.
-
-        Returns:
-            str: Username if logged in, None otherwise
-        """
         return self.current_user.username if self.current_user else None
 
     def get_current_user_role(self):
         return self.current_user.role if self.current_user else None
 
     def is_authenticated(self):
-        """
-        Check if a user is currently authenticated.
-
-        Returns:
-            bool: True if user is logged in, False otherwise
-        """
         return self.current_user is not None

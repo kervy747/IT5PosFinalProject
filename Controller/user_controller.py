@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import QMessageBox
 
-
 class UserController:
     def __init__(self, main_controller):
         self.main = main_controller
@@ -8,7 +7,6 @@ class UserController:
         self.main_window = main_controller.main_window
 
     def handle_add_user(self, username, password, role):
-        """Add a new user"""
         if self.model.add_user(username, password, role):
             QMessageBox.information(self.main_window, "Success", "User added successfully")
             self.main.admin_tabbed_view.update_users_table(

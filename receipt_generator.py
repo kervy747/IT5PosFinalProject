@@ -1,7 +1,6 @@
 from datetime import datetime
 import os
 
-
 class ReceiptGenerator:
     def __init__(self, receipt_folder="receipts"):
         self.receipt_folder = receipt_folder

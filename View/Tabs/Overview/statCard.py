@@ -3,7 +3,6 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from View.colors import *
 
-
 class StatCard(QFrame):
 
     def __init__(self, title, value, icon="", trend=None, color=PRIMARY):
@@ -21,10 +20,7 @@ class StatCard(QFrame):
                 background-color: {WHITE};
                 border-radius: 16px;
                 border: none;
-            }}
-            QFrame:hover {{
-                background-color: #FAFBFC;
-            }}
+            }}  
         """)
         self.setMinimumHeight(140)
         self.setMaximumHeight(160)
@@ -43,7 +39,7 @@ class StatCard(QFrame):
             icon_container.setFixedSize(48, 48)
             icon_container.setStyleSheet(f"""
                 QFrame {{
-                    background-color: {self.color}15;
+                    background-color: transparent;  # ← Change this
                     border-radius: 24px;
                 }}
             """)

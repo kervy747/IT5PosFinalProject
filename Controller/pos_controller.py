@@ -117,10 +117,6 @@ class POSOperationsController:
                                  f"An unexpected error occurred: {str(e)}")
 
     def _get_available_products(self):
-        """
-        ✅ NEW: Filter products to only show items with stock > 0
-        This logic was moved from the view to the controller
-        """
         return [p for p in self.model.products if p.stock > 0]
 
     def _generate_and_show_receipt(self, order_id, staff_name, cart_items, total, cash_amount, change):

@@ -1,19 +1,24 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
+from PyQt6.QtCore import *
 from View.components import *
 from View.posView.cartView import cartView
+import os
+
 
 class mainPosView(QWidget):
-    add_to_cart_signal = pyqtSignal(str, int)  # product_id (str), quantity (int)
+    add_to_cart_signal = pyqtSignal(str, int)
     remove_from_cart_signal = pyqtSignal(int)
     complete_sale_signal = pyqtSignal()
     logout_signal = pyqtSignal()
     back_to_admin_signal = pyqtSignal()
+    search_product_signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.is_admin_mode = False
         self.cart_view = cartView()
+        self.all_products = []
         self.init_ui()
 
     def init_ui(self):
@@ -21,11 +26,9 @@ class mainPosView(QWidget):
         main_layout.setContentsMargins(25, 25, 25, 25)
         main_layout.setSpacing(20)
 
-        # Header - WHITE background
         header_frame = HeaderFrame()
         header_layout = QHBoxLayout(header_frame)
 
-        # Logo and title
         logo_label = QLabel()
         pixmap = QPixmap(r"C:\Users\kervy\Documents\Coding\IT5FinalProject\Assets\T360logo.png")
         if not pixmap.isNull():
@@ -37,11 +40,10 @@ class mainPosView(QWidget):
 
         header = QLabel("Point of Sale")
         header.setFont(QFont("Poppins", 24, QFont.Weight.Bold))
-        header.setStyleSheet(f"color: {PRIMARY};")  # Teal color, readable on white
+        header.setStyleSheet(f"color: {PRIMARY};")
         header_layout.addWidget(header)
         header_layout.addStretch()
 
-        # Back to Admin button
         self.back_to_admin_btn = QPushButton("← Back to Admin")
         self.back_to_admin_btn.setFixedWidth(150)
         self.back_to_admin_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -67,7 +69,6 @@ class mainPosView(QWidget):
         self.back_to_admin_btn.setVisible(False)
         header_layout.addWidget(self.back_to_admin_btn)
 
-        # Logout button
         logout_btn = QPushButton("Logout")
         logout_btn.setFixedWidth(100)
         logout_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -94,17 +95,27 @@ class mainPosView(QWidget):
 
         main_layout.addWidget(header_frame)
 
-        # Content layout
         content_layout = QHBoxLayout()
         content_layout.setSpacing(20)
 
-        # Products section (LEFT) - 60%
         products_frame = CardFrame()
         products_layout = QVBoxLayout(products_frame)
         products_layout.setContentsMargins(20, 20, 20, 20)
         products_layout.setSpacing(15)
 
         products_layout.addWidget(SectionLabel("Available Products", 18))
+
+        self.search_input = SearchInput("Search by Product ID or Name...")
+
+        search_icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "searchIcon.svg")
+        if os.path.exists(search_icon_path):
+            search_icon = QIcon(search_icon_path)
+            search_action = QAction(search_icon, "", self.search_input)
+            self.search_input.addAction(search_action, QLineEdit.ActionPosition.LeadingPosition)
+
+        self.search_input.textChanged.connect(self.filter_products)
+
+        products_layout.addWidget(self.search_input)
 
         self.products_table = StyledTable(5, ["ID", "Product Name", "Price", "Stock", "Quantity"])
         self.products_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -135,7 +146,6 @@ class mainPosView(QWidget):
 
         content_layout.addWidget(products_frame, 60)
 
-        # Cart section (RIGHT) - 40%
         self.cart_view.remove_from_cart_signal.connect(self.remove_from_cart_signal.emit)
         self.cart_view.complete_sale_signal.connect(self.complete_sale_signal.emit)
         content_layout.addWidget(self.cart_view, 40)
@@ -143,50 +153,61 @@ class mainPosView(QWidget):
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
 
+    def filter_products(self):
+        search_text = self.search_input.text().strip().lower()
+
+        if not search_text:
+            self._display_products(self.all_products)
+        else:
+            filtered = [
+                p for p in self.all_products
+                if search_text in p.product_id.lower() or search_text in p.name.lower()
+            ]
+            self._display_products(filtered)
+
     def update_products(self, products):
+        self.all_products = products
+        self._display_products(products)
+
+    def _display_products(self, products):
+        self.products_table.clearSpans()
         self.products_table.setRowCount(len(products))
 
         for i, product in enumerate(products):
-            # ID - Uses product_id (PR#####)
             id_item = QTableWidgetItem(str(product.product_id))
             id_item.setFont(QFont("Poppins", 9, QFont.Weight.Bold))
-            id_item.setForeground(QColor("#006D77"))  # Teal color for product ID
+            id_item.setForeground(QColor("#006D77"))
             id_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.products_table.setItem(i, 0, id_item)
 
-            # Name
             name_item = QTableWidgetItem(product.name)
             name_item.setFont(QFont("Poppins", 10))
             self.products_table.setItem(i, 1, name_item)
 
-            # Price
             price_item = QTableWidgetItem(f"₱{product.price:,.2f}")
             price_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold))
             price_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.products_table.setItem(i, 2, price_item)
 
-            # Stock - Add visual indicator for low stock
             stock_item = QTableWidgetItem(str(product.stock))
             stock_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold))
             stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
-            # Color code based on stock level
             if product.stock <= 5:
-                stock_item.setForeground(QColor("#D32F2F"))  # Red for low stock
+                stock_item.setForeground(QColor("#D32F2F"))
             elif product.stock <= 10:
-                stock_item.setForeground(QColor("#F57C00"))  # Orange for medium stock
+                stock_item.setForeground(QColor("#F57C00"))
             else:
-                stock_item.setForeground(QColor("#2E7D32"))  # Green for good stock
+                stock_item.setForeground(QColor("#2E7D32"))
 
             self.products_table.setItem(i, 3, stock_item)
 
-            # Quantity input - MUCH BIGGER and easier to click
             qty_input = QLineEdit()
             qty_input.setText("1")
             qty_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
             qty_input.setValidator(QIntValidator(1, max(1, product.stock)))
-            qty_input.setMinimumWidth(120)  # Much wider
-            qty_input.setMinimumHeight(45)  # Much taller - easy to click
+            qty_input.setMinimumWidth(120)
+            qty_input.setMinimumHeight(45)
             qty_input.setStyleSheet("""
                 QLineEdit {
                     color: black;
@@ -209,7 +230,6 @@ class mainPosView(QWidget):
                 }
             """)
 
-            # Center the input widget
             container = QWidget()
             container_layout = QHBoxLayout(container)
             container_layout.addWidget(qty_input)
@@ -217,33 +237,26 @@ class mainPosView(QWidget):
             container_layout.setContentsMargins(0, 0, 0, 0)
             self.products_table.setCellWidget(i, 4, container)
 
-        # Set column widths
-        self.products_table.setColumnWidth(0, 80)  # Wider for PR##### format
+        self.products_table.setColumnWidth(0, 80)
         self.products_table.setColumnWidth(2, 120)
         self.products_table.setColumnWidth(3, 80)
-        self.products_table.setColumnWidth(4, 150)  # Wider column for bigger input
+        self.products_table.setColumnWidth(4, 150)
 
-        # Make rows taller to accommodate bigger input
         for row in range(self.products_table.rowCount()):
             self.products_table.setRowHeight(row, 55)
 
-        # Show message if no products available
         if len(products) == 0:
             self.show_no_products_message()
 
     def show_no_products_message(self):
-        # Clear the table
         self.products_table.setRowCount(1)
-
-        # Merge all columns for the message
         self.products_table.setSpan(0, 0, 1, 5)
 
-        # Create message item
-        message_item = QTableWidgetItem("No products available in stock")
+        message_item = QTableWidgetItem("No products found")
         message_item.setFont(QFont("Poppins", 12, QFont.Weight.Bold))
         message_item.setForeground(QColor("#757575"))
         message_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        message_item.setFlags(Qt.ItemFlag.NoItemFlags)  # Make it non-selectable
+        message_item.setFlags(Qt.ItemFlag.NoItemFlags)
 
         self.products_table.setItem(0, 0, message_item)
         self.products_table.setRowHeight(0, 100)
@@ -252,7 +265,6 @@ class mainPosView(QWidget):
         self.cart_view.update_cart(cart, total)
 
     def highlight_selected_row(self):
-        # Reset all row backgrounds first
         for row in range(self.products_table.rowCount()):
             qty_widget = self.products_table.cellWidget(row, 4)
             if qty_widget:
@@ -280,7 +292,6 @@ class mainPosView(QWidget):
                         }
                     """)
 
-        # Highlight selected row
         selected_rows = self.products_table.selectedIndexes()
         if selected_rows:
             row = selected_rows[0].row()
@@ -313,18 +324,15 @@ class mainPosView(QWidget):
     def on_add_to_cart(self):
         row = self.products_table.currentRow()
         if row >= 0:
-            # Check if this is the "no products" message row
             if self.products_table.rowSpan(row, 0) > 1:
-                QMessageBox.information(self, "No Products", "There are no products available in stock.")
+                QMessageBox.information(self, "No Products", "There are no products available.")
                 return
 
-            # Get product_id as string (e.g., "PR00001")
             product_id = self.products_table.item(row, 0).text()
             qty_widget = self.products_table.cellWidget(row, 4)
             qty_input = qty_widget.findChild(QLineEdit)
             quantity = int(qty_input.text()) if qty_input and qty_input.text() else 1
 
-            # Just emit signal - let controller handle the rest
             self.add_to_cart_signal.emit(product_id, quantity)
         else:
             QMessageBox.warning(self, "No Selection", "Please select a product first.")
