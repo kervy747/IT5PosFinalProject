@@ -64,20 +64,17 @@ class POSController:
 
         # Transaction management signals
         self.admin_tabbed_view.search_transactions_signal.connect(self.transaction.handle_search_transactions)
-        # Add this if you have delete transaction functionality in your view:
-        # self.admin_tabbed_view.delete_transaction_signal.connect(self.transaction.handle_delete_transaction)
 
         # POS operation signals
         self.pos_view.add_to_cart_signal.connect(self.pos_ops.handle_add_to_cart)
         self.pos_view.remove_from_cart_signal.connect(self.pos_ops.handle_remove_from_cart)
         self.pos_view.complete_sale_signal.connect(self.pos_ops.handle_complete_sale)
 
-    def show_admin_dashboard(self):
-        # Update all dashboard views with current data
+    def show_admin_dashboard(self):# Update all dashboard views with current data
         self.admin_tabbed_view.update_overview()
 
-        # Get current username for display (None-safe)
-        current_username = self.model.current_user.username if self.model.current_user else None
+        # Get current username from auth controller (NEW!)
+        current_username = self.auth.get_current_username()
 
         self.admin_tabbed_view.update_users_table(
             self.model.users,

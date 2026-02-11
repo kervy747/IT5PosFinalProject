@@ -10,26 +10,26 @@ class AuthController:
         self.current_user = None
 
     def handle_login(self, username, password):
-        # Authenticate with model
-        if self.model.authenticate(username, password):
-            self.current_user = self.model.current_user
-            user_role = self.current_user.role
+        authenticated_user = self.model.authenticate(username, password)
+
+        if authenticated_user:
+            self.current_user = authenticated_user
 
             # Route based on role
-            if user_role == "admin":
+            if authenticated_user.is_admin():
                 # Admin goes to dashboard
                 self.main.show_admin_dashboard()
-            elif user_role == "staff":
+            elif authenticated_user.is_staff():
                 # Staff goes to POS
                 self.main.show_pos_view()
             else:
-                # Unknown role - show error via View
+                # Unknown role - show error
                 self.main.login_view.show_error(
                     "Error",
-                    "Unknown user role"
+                    f"Unknown user role: {authenticated_user.role}"
                 )
+                self.current_user = None  # Clear invalid user
         else:
-            # Authentication failed - show error via View
             self.main.login_view.show_error(
                 "Login Failed",
                 "Invalid username or password"
@@ -38,7 +38,6 @@ class AuthController:
     def handle_logout(self):
         current_view = self.stack.currentWidget()
 
-        # Show confirmation dialog
         reply = QMessageBox.question(
             self.main_window,
             "Confirm Logout",
@@ -49,11 +48,17 @@ class AuthController:
         if reply == QMessageBox.StandardButton.Yes:
             # Clear user session
             self.current_user = None
-            self.model.current_user = None
+
+            # Clear cart
             self.model.clear_cart()
 
             # Return to login screen
             self.main.show_login_view()
+
+    # ==================== Convenience Methods ====================
+
+    def get_current_user(self):
+        return self.current_user
 
     def get_current_username(self):
         return self.current_user.username if self.current_user else None
@@ -63,3 +68,9 @@ class AuthController:
 
     def is_authenticated(self):
         return self.current_user is not None
+
+    def is_current_user_admin(self):
+        return self.current_user is not None and self.current_user.is_admin()
+
+    def is_current_user_staff(self):
+        return self.current_user is not None and self.current_user.is_staff()

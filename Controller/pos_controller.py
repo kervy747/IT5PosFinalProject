@@ -11,12 +11,11 @@ class POSOperationsController:
         self.receipt_generator = ReceiptGenerator(receipt_folder="receipts")
 
     def handle_add_to_cart(self, product_id, quantity):
-        # Find product by product_id (now string format)
         product = next((p for p in self.model.products if p.product_id == product_id), None)
 
         if product:
             if self.model.add_to_cart(product, quantity):
-                # ✅ Filter products before sending to view
+                # Update views
                 available_products = self._get_available_products()
                 self.main.pos_view.update_products(available_products)
                 self.main.pos_view.update_cart(self.model.cart, self.model.get_cart_total())
@@ -27,17 +26,20 @@ class POSOperationsController:
 
     def handle_remove_from_cart(self, index):
         self.model.remove_from_cart(index)
-        # ✅ Filter products before sending to view
+
+        # Update views
         available_products = self._get_available_products()
         self.main.pos_view.update_products(available_products)
         self.main.pos_view.update_cart(self.model.cart, self.model.get_cart_total())
 
     def handle_complete_sale(self):
         try:
+            # Validate cart
             if not self.model.cart:
                 QMessageBox.warning(self.main_window, "Error", "Cart is empty")
                 return
 
+            # Get cash amount
             cash_amount = self.main.pos_view.cart_view.get_cash_amount()
 
             if cash_amount is None:
@@ -47,6 +49,7 @@ class POSOperationsController:
 
             total = float(self.model.get_cart_total())
 
+            # Validate cash amount
             if cash_amount < total:
                 shortage = total - cash_amount
                 QMessageBox.warning(
@@ -59,6 +62,7 @@ class POSOperationsController:
 
             change = cash_amount - total
 
+            # Confirm sale
             reply = QMessageBox.question(
                 self.main_window,
                 "Confirm Sale",
@@ -71,25 +75,44 @@ class POSOperationsController:
             )
 
             if reply == QMessageBox.StandardButton.Yes:
+                # Store cart items for receipt
                 cart_items_copy = self.model.cart.copy()
-                staff_name = self.model.current_user.username if self.model.current_user else "Unknown"
+
+                # KEY CHANGE: Get current_user from auth_controller, not model!
+                current_user = self.main.auth.get_current_user()
+                staff_name = current_user.username if current_user else "Unknown"
 
                 try:
-                    self.model.complete_sale()
+                    # Complete sale - pass current_user to model (NEW!)
+                    success = self.model.complete_sale(current_user)
+
+                    if not success:
+                        QMessageBox.critical(
+                            self.main_window,
+                            "Error",
+                            "Failed to complete sale. Please try again."
+                        )
+                        return
+
                 except Exception as e:
                     print(f"Error in model.complete_sale(): {e}")
                     import traceback
                     traceback.print_exc()
-                    QMessageBox.critical(self.main_window, "Error", f"Failed to complete sale: {str(e)}")
+                    QMessageBox.critical(
+                        self.main_window,
+                        "Error",
+                        f"Failed to complete sale: {str(e)}"
+                    )
                     return
 
+                # Get order ID from last transaction
                 if self.model.transactions:
                     last_transaction = self.model.transactions[0]  # Transactions are ordered DESC
                     order_id = last_transaction.order_id
                 else:
                     order_id = "OR?????"  # Fallback
 
-                # ✅ Update views with filtered products
+                # Update views
                 try:
                     available_products = self._get_available_products()
                     self.main.pos_view.update_products(available_products)
@@ -99,11 +122,13 @@ class POSOperationsController:
                     import traceback
                     traceback.print_exc()
 
+                # Clear cash input
                 try:
                     self.main.pos_view.cart_view.clear_cash_input()
                 except Exception as e:
                     print(f"Error clearing cash input: {e}")
 
+                # Generate and show receipt
                 self._generate_and_show_receipt(
                     order_id, staff_name, cart_items_copy,
                     total, cash_amount, change
@@ -113,8 +138,11 @@ class POSOperationsController:
             print(f"FATAL ERROR in handle_complete_sale: {e}")
             import traceback
             traceback.print_exc()
-            QMessageBox.critical(self.main_window, "Critical Error",
-                                 f"An unexpected error occurred: {str(e)}")
+            QMessageBox.critical(
+                self.main_window,
+                "Critical Error",
+                f"An unexpected error occurred: {str(e)}"
+            )
 
     def _get_available_products(self):
         return [p for p in self.model.products if p.stock > 0]

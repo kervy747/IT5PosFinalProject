@@ -1,5 +1,4 @@
 import os
-
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTabWidget
 from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QFont, QPixmap
@@ -10,9 +9,7 @@ from View.Tabs.userManagementTab import UserManagementTab
 from View.Tabs.productManagementTab import ProductManagementTab
 from Controller.overview_controller import OverviewController
 
-
 class AdminTabbedView(QWidget):
-    # Signals from all tabs
     logout_signal = pyqtSignal()
 
     # User management signals
