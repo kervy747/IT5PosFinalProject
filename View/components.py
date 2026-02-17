@@ -223,8 +223,6 @@ class SearchInput(QLineEdit):
 # ============= TABLES =============
 
 class StyledTable(QTableWidget):
-    """Pre-styled table widget"""
-
     def __init__(self, columns, headers):
         super().__init__()
         self.setColumnCount(columns)

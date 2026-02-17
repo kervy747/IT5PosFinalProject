@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import QMessageBox
 
-
 class ProductController:
     def __init__(self, main_controller):
         self.main = main_controller

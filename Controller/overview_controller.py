@@ -209,7 +209,6 @@ class OverviewController:
                 date_key = trans_date.strftime("%Y-%m-%d")
                 if date_key in daily_revenue:
                     daily_revenue[date_key] += transaction.total_amount
-
         return daily_revenue
 
     def get_product_performance(self, product_name):

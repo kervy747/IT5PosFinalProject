@@ -23,7 +23,6 @@ class User:
         try:
             return bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
         except (ValueError, AttributeError):
-            # Fallback for legacy plain-text passwords
             return self.password == password
 
     def deactivate(self):

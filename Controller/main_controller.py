@@ -8,7 +8,6 @@ from .product_controller import ProductController
 from .pos_controller import POSOperationsController
 from .transaction_controller import TransactionController
 
-
 class POSController:
     def __init__(self, model, login_view, pos_view):
         self.model = model

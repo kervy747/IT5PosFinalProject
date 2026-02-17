@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 from Model.transaction import Transaction
 from Controller.db import get_connection
-
 logger = logging.getLogger(__name__)
 
 
