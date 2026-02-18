@@ -127,10 +127,9 @@ class OverviewController:
                 product_data[product_name]['quantity'] += quantity
                 product_data[product_name]['revenue'] += quantity * price
 
-        # Sort by revenue and return top products
         top_products = sorted(
             product_data.items(),
-            key=lambda x: x[1]['revenue'],
+            key=lambda x: x[1]['quantity'],
             reverse=True
         )[:limit]
 

@@ -15,7 +15,6 @@ class TopProductCard(QFrame):
         self.init_ui()
 
     def init_ui(self):
-        # Gradient colors based on rank
         rank_colors = {
             1: ("#FFD700", "#FFA500"),  # Gold
             2: ("#C0C0C0", "#A8A8A8"),  # Silver
@@ -66,7 +65,7 @@ class TopProductCard(QFrame):
 
         layout.addWidget(rank_container)
 
-        # Product info
+        # Product name
         info_layout = QVBoxLayout()
         info_layout.setSpacing(4)
 
@@ -75,19 +74,26 @@ class TopProductCard(QFrame):
         name_label.setStyleSheet(f"color: {TEXT_DARK}; background: transparent;")
         info_layout.addWidget(name_label)
 
-        stats_label = QLabel(f"{self.quantity} units sold")
-        stats_label.setFont(QFont("Poppins", 10))
-        stats_label.setStyleSheet(f"color: #64748B; background: transparent;")
-        info_layout.addWidget(stats_label)
-
         layout.addLayout(info_layout)
         layout.addStretch()
 
-        # Revenue
-        revenue_label = QLabel(f"₱{self.revenue:,.2f}")
-        revenue_label.setFont(QFont("Poppins", 14, QFont.Weight.Bold))
-        revenue_label.setStyleSheet(f"color: {PRIMARY}; background: transparent;")
-        revenue_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        layout.addWidget(revenue_label)
+        units_layout = QVBoxLayout()
+        units_layout.setSpacing(2)
+        units_layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+        units_value = QLabel(str(self.quantity))
+        units_value.setFont(QFont("Poppins", 18, QFont.Weight.Bold))
+        units_value.setStyleSheet(f"color: {bg_color}; background: transparent;")
+        units_value.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        units_text = QLabel("units sold")
+        units_text.setFont(QFont("Poppins", 9))
+        units_text.setStyleSheet("color: #64748B; background: transparent;")
+        units_text.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        units_layout.addWidget(units_value)
+        units_layout.addWidget(units_text)
+
+        layout.addLayout(units_layout)
 
         self.setLayout(layout)

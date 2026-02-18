@@ -46,19 +46,16 @@ class OverviewTab(QWidget):
 
         main_layout.addLayout(header_layout)
 
-        # Stats Grid - 4 columns
         stats_grid = QGridLayout()
         stats_grid.setSpacing(16)
 
         self.revenue_card = StatCard("Today's Revenue", "₱0.00", "💰", color=PRIMARY)
         self.monthly_card = StatCard("Monthly Sales", "₱0.00", "📊", color="#00897B")
-        self.transactions_card = StatCard("Transactions", "0", "🛒", color="#1E88E5")
         self.avg_card = StatCard("Avg. Transaction", "₱0.00", "💳", color="#7B1FA2")
 
         stats_grid.addWidget(self.revenue_card, 0, 0)
         stats_grid.addWidget(self.monthly_card, 0, 1)
-        stats_grid.addWidget(self.transactions_card, 0, 2)
-        stats_grid.addWidget(self.avg_card, 0, 3)
+        stats_grid.addWidget(self.avg_card, 0, 2)
 
         main_layout.addLayout(stats_grid)
 
@@ -254,7 +251,6 @@ class OverviewTab(QWidget):
     def _update_revenue_metrics(self, metrics):
         self.revenue_card.update_value(f"₱{metrics['today_revenue']:,.2f}")
         self.monthly_card.update_value(f"₱{metrics['monthly_revenue']:,.2f}")
-        self.transactions_card.update_value(str(metrics['monthly_transactions']))
         self.avg_card.update_value(f"₱{metrics['avg_transaction']:,.2f}")
 
     def _update_top_products(self, top_products):
