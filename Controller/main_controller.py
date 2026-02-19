@@ -45,31 +45,27 @@ class POSController:
         self._connect_signals()
 
     def _connect_signals(self):
-        # Authentication signals
         self.login_view.login_signal.connect(self.auth.handle_login)
         self.admin_tabbed_view.logout_signal.connect(self.auth.handle_logout)
         self.pos_view.logout_signal.connect(self.auth.handle_logout)
 
-        # User management signals
         self.admin_tabbed_view.add_user_signal.connect(self.user.handle_add_user)
         self.admin_tabbed_view.delete_user_signal.connect(self.user.handle_delete_user)
         self.admin_tabbed_view.reactivate_user_signal.connect(self.user.handle_reactivate_user)
         self.admin_tabbed_view.search_users_signal.connect(self.user.handle_search_users)
 
-        # Product management signals
         self.admin_tabbed_view.add_product_signal.connect(self.product.handle_add_product)
         self.admin_tabbed_view.delete_product_signal.connect(self.product.handle_delete_product)
         self.admin_tabbed_view.search_products_signal.connect(self.product.handle_search_products)
 
-        # Transaction management signals
         self.admin_tabbed_view.search_transactions_signal.connect(self.transaction.handle_search_transactions)
+        self.admin_tabbed_view.filter_by_month_signal.connect(self.transaction.handle_filter_by_month)
 
-        # POS operation signals
         self.pos_view.add_to_cart_signal.connect(self.pos_ops.handle_add_to_cart)
         self.pos_view.remove_from_cart_signal.connect(self.pos_ops.handle_remove_from_cart)
         self.pos_view.complete_sale_signal.connect(self.pos_ops.handle_complete_sale)
 
-    def show_admin_dashboard(self):# Update all dashboard views with current data
+    def show_admin_dashboard(self):
         self.admin_tabbed_view.update_overview()
 
         # Get current username from auth controller (NEW!)

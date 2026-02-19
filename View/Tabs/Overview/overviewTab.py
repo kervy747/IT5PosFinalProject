@@ -216,6 +216,11 @@ class OverviewTab(QWidget):
 
     def update_overview(self, selected_month=None, selected_year=None):
         try:
+            # Update year dropdown to only show years with transactions
+            self.month_selector.set_available_years(
+                self.controller.data_model.transactions
+            )
+
             # Get all data from controller
             dashboard_data = self.controller.get_dashboard_data(
                 selected_month, selected_year

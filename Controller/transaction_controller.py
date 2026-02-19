@@ -1,4 +1,6 @@
+from datetime import datetime
 from PyQt6.QtWidgets import QMessageBox
+
 
 class TransactionController:
     def __init__(self, main_controller):
@@ -14,6 +16,18 @@ class TransactionController:
         filtered_transactions = self.model.search_transactions(search_term)
         self.main.admin_tabbed_view.update_transactions_table(filtered_transactions)
 
+    def handle_filter_by_month(self, month, year):
+        filtered = []
+        for t in self.model.transactions:
+            try:
+                trans_date = datetime.strptime(t.date, "%m-%d-%Y %I:%M %p")
+                if trans_date.month == month and trans_date.year == year:
+                    filtered.append(t)
+            except Exception:
+                pass
+        self.main.admin_tabbed_view.transactions_tab.month_selector.set_available_years(self.model.transactions)
+        self.main.admin_tabbed_view.update_transactions_table(filtered)
+
     def handle_delete_transaction(self, order_id):
         reply = QMessageBox.question(
             self.main_window,
@@ -28,9 +42,7 @@ class TransactionController:
             success, message = self.model.delete_transaction(order_id)
             if success:
                 QMessageBox.information(self.main_window, "Success", message)
-                # Refresh the transactions table
                 self.main.transaction_view.update_transactions_table(self.model.transactions)
-                # Update overview if needed
                 if hasattr(self.main, 'overview_view'):
                     self.main.overview_view.update_overview(self.model.transactions, self.model.products)
             else:

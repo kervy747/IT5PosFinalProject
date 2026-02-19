@@ -344,10 +344,8 @@ class FieldLabel(QLabel):
         self.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
         self.setStyleSheet("color: #2c3e50; margin: 0px; border: none;")
 
-
 class MonthYearSelector(QFrame):
-    # Signal emitted when month/year changes
-    month_changed = pyqtSignal(int, int)  # month, year
+    month_changed = pyqtSignal(int, int)
 
     def __init__(self, start_year=2020):
         super().__init__()
@@ -362,8 +360,6 @@ class MonthYearSelector(QFrame):
         ]
 
         self.init_ui()
-
-        # Set to current month/year by default
         self.set_current_date()
 
     def init_ui(self):
@@ -380,13 +376,11 @@ class MonthYearSelector(QFrame):
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(12)
 
-        # Calendar icon label
         icon_label = QLabel("📅")
         icon_label.setFont(QFont("Segoe UI Emoji", 16))
         icon_label.setStyleSheet("background: transparent; margin: 0px; border: none;")
         layout.addWidget(icon_label)
 
-        # Month dropdown
         self.month_combo = QComboBox()
         self.month_combo.addItems(self.months)
         self.month_combo.setFont(QFont("Poppins", 11, QFont.Weight.Medium))
@@ -438,11 +432,8 @@ class MonthYearSelector(QFrame):
         self.month_combo.currentIndexChanged.connect(self.on_selection_changed)
         layout.addWidget(self.month_combo)
 
-        # Year dropdown
         self.year_combo = QComboBox()
-        current_year = self.current_date.year
-        years = [str(year) for year in range(self.start_year, current_year + 2)]
-        self.year_combo.addItems(years)
+        self.year_combo.addItem(str(self.current_date.year))
         self.year_combo.setFont(QFont("Poppins", 11, QFont.Weight.Medium))
         self.year_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.year_combo.setMinimumWidth(90)
@@ -492,40 +483,47 @@ class MonthYearSelector(QFrame):
         self.year_combo.currentIndexChanged.connect(self.on_selection_changed)
         layout.addWidget(self.year_combo)
 
-        # Current month button
-        self.current_btn = QPushButton("Today")
-        self.current_btn.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
-        self.current_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.current_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {ACCENT};
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 16px;
-                margin: 0px;
-            }}
-            QPushButton:hover {{
-                background-color: {PRIMARY};
-            }}
-            QPushButton:pressed {{
-                background-color: #004a54;
-            }}
-        """)
-        self.current_btn.clicked.connect(self.set_current_date)
-        layout.addWidget(self.current_btn)
+    def set_available_years(self, transactions):
+        from datetime import datetime
+
+        current_year = self.current_date.year
+        years_with_data = set()
+
+        for t in transactions:
+            try:
+                if hasattr(t, 'date') and t.date:
+                    trans_date = datetime.strptime(t.date, "%m-%d-%Y %I:%M %p")
+                    years_with_data.add(trans_date.year)
+            except Exception:
+                pass
+
+        years_with_data.add(current_year)
+        sorted_years = sorted(years_with_data)
+        currently_selected = self.year_combo.currentText()
+
+        self.year_combo.blockSignals(True)
+        self.year_combo.clear()
+        self.year_combo.addItems([str(y) for y in sorted_years])
+
+        restore_index = self.year_combo.findText(currently_selected)
+        if restore_index >= 0:
+            self.year_combo.setCurrentIndex(restore_index)
+        else:
+            fallback = self.year_combo.findText(str(current_year))
+            if fallback >= 0:
+                self.year_combo.setCurrentIndex(fallback)
+
+        self.year_combo.blockSignals(False)
 
     def on_selection_changed(self):
-        selected_month = self.month_combo.currentIndex() + 1  # Convert to 1-12
+        selected_month = self.month_combo.currentIndex() + 1
         selected_year = int(self.year_combo.currentText())
-
         self.month_changed.emit(selected_month, selected_year)
 
     def set_current_date(self):
         current_month = self.current_date.month
         current_year = self.current_date.year
 
-        # Block signals to prevent duplicate emissions
         self.month_combo.blockSignals(True)
         self.year_combo.blockSignals(True)
 
@@ -534,11 +532,9 @@ class MonthYearSelector(QFrame):
         if year_index >= 0:
             self.year_combo.setCurrentIndex(year_index)
 
-        # Unblock signals
         self.month_combo.blockSignals(False)
         self.year_combo.blockSignals(False)
 
-        # Emit the change
         self.month_changed.emit(current_month, current_year)
 
     def get_selected_month(self):
@@ -547,7 +543,6 @@ class MonthYearSelector(QFrame):
         return month, year
 
     def set_month_year(self, month, year):
-        # Block signals to prevent duplicate emissions
         self.month_combo.blockSignals(True)
         self.year_combo.blockSignals(True)
 
@@ -558,9 +553,7 @@ class MonthYearSelector(QFrame):
         if year_index >= 0:
             self.year_combo.setCurrentIndex(year_index)
 
-        # Unblock signals
         self.month_combo.blockSignals(False)
         self.year_combo.blockSignals(False)
 
-        # Emit the change
         self.month_changed.emit(month, year)

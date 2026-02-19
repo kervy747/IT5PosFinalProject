@@ -12,25 +12,22 @@ from Controller.overview_controller import OverviewController
 class AdminTabbedView(QWidget):
     logout_signal = pyqtSignal()
 
-    # User management signals
     add_user_signal = pyqtSignal(str, str, str)
     delete_user_signal = pyqtSignal(str)
     reactivate_user_signal = pyqtSignal(str)
     search_users_signal = pyqtSignal(str)
 
-    # Product management signals
     add_product_signal = pyqtSignal(str, float, int)
     delete_product_signal = pyqtSignal(str)
     search_products_signal = pyqtSignal(str)
 
-    # Transaction signals (search only, no delete)
     search_transactions_signal = pyqtSignal(str)
+    filter_by_month_signal = pyqtSignal(int, int)
 
     def __init__(self, data_model):
         super().__init__()
         self.data_model = data_model
 
-        # Create overview controller
         self.overview_controller = OverviewController(data_model)
 
         self.init_ui()
@@ -41,7 +38,6 @@ class AdminTabbedView(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # ==================== HEADER ====================
         header_widget = QWidget()
         header_widget.setStyleSheet(f"""
             QWidget {{
@@ -52,11 +48,9 @@ class AdminTabbedView(QWidget):
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(25, 15, 25, 15)
 
-        # Logo and Title
         logo_title_layout = QHBoxLayout()
         logo_title_layout.setSpacing(12)
 
-        # Logo
         logo_label = QLabel()
         icon_path = os.path.join(os.path.dirname(__file__), "..", "Assets", "T360logo.png")
         pixmap = QPixmap(icon_path)
@@ -74,7 +68,6 @@ class AdminTabbedView(QWidget):
         header_layout.addLayout(logo_title_layout)
         header_layout.addStretch()
 
-        # Logout button
         logout_btn = QPushButton("Logout")
         logout_btn.setFixedWidth(110)
         logout_btn.setStyleSheet(f"""
@@ -103,7 +96,6 @@ class AdminTabbedView(QWidget):
 
         main_layout.addWidget(header_widget)
 
-        # ==================== TAB WIDGET ====================
         self.tab_widget = QTabWidget()
         self.tab_widget.setStyleSheet(f"""
             QTabWidget::pane {{
@@ -131,13 +123,11 @@ class AdminTabbedView(QWidget):
             }}
         """)
 
-        # Create tab instances (each from separate files)
         self.overview_tab = OverviewTab(self.overview_controller)
         self.transactions_tab = TransactionsTab()
         self.user_mgmt_tab = UserManagementTab()
         self.product_mgmt_tab = ProductManagementTab()
 
-        # Add tabs to widget
         self.tab_widget.addTab(self.overview_tab, "Overview")
         self.tab_widget.addTab(self.transactions_tab, "Transactions")
         self.tab_widget.addTab(self.user_mgmt_tab, "User Management")
@@ -146,21 +136,18 @@ class AdminTabbedView(QWidget):
         main_layout.addWidget(self.tab_widget)
 
     def _connect_tab_signals(self):
-        # User Management tab signals
         self.user_mgmt_tab.add_user_signal.connect(self.add_user_signal.emit)
         self.user_mgmt_tab.delete_user_signal.connect(self.delete_user_signal.emit)
-        self.user_mgmt_tab.reactivate_user_signal.connect(self.reactivate_user_signal.emit)  # NEW
+        self.user_mgmt_tab.reactivate_user_signal.connect(self.reactivate_user_signal.emit)
         self.user_mgmt_tab.search_users_signal.connect(self.search_users_signal.emit)
 
-        # Product Management tab signals
         self.product_mgmt_tab.add_product_signal.connect(self.add_product_signal.emit)
         self.product_mgmt_tab.delete_product_signal.connect(self.delete_product_signal.emit)
         self.product_mgmt_tab.search_products_signal.connect(self.search_products_signal.emit)
 
-        # Transactions tab signals (search only)
         self.transactions_tab.search_transactions_signal.connect(self.search_transactions_signal.emit)
+        self.transactions_tab.filter_by_month_signal.connect(self.filter_by_month_signal.emit)
 
-    # ==================== UPDATE METHODS ====================
     def update_overview(self):
         self.overview_tab.update_overview()
 
@@ -171,4 +158,5 @@ class AdminTabbedView(QWidget):
         self.product_mgmt_tab.update_products_table(products)
 
     def update_transactions_table(self, transactions):
+        self.transactions_tab.month_selector.set_available_years(self.data_model.transactions)
         self.transactions_tab.update_transactions_table(transactions)
