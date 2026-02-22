@@ -1,5 +1,4 @@
 from datetime import datetime
-from PyQt6.QtWidgets import QMessageBox
 
 
 class TransactionController:
@@ -29,21 +28,18 @@ class TransactionController:
         self.main.admin_tabbed_view.update_transactions_table(filtered)
 
     def handle_delete_transaction(self, order_id):
-        reply = QMessageBox.question(
-            self.main_window,
+        confirmed = self.main.admin_tabbed_view.transactions_tab.show_question(
             "Confirm Delete",
             f"Are you sure you want to delete transaction '{order_id}'?\n\n"
-            "This action cannot be undone.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            "This action cannot be undone."
         )
 
-        if reply == QMessageBox.StandardButton.Yes:
+        if confirmed:
             success, message = self.model.delete_transaction(order_id)
             if success:
-                QMessageBox.information(self.main_window, "Success", message)
+                self.main.admin_tabbed_view.transactions_tab.show_info("Success", message)
                 self.main.transaction_view.update_transactions_table(self.model.transactions)
                 if hasattr(self.main, 'overview_view'):
                     self.main.overview_view.update_overview(self.model.transactions, self.model.products)
             else:
-                QMessageBox.warning(self.main_window, "Error", message)
+                self.main.admin_tabbed_view.transactions_tab.show_error("Error", message)

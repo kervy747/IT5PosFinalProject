@@ -3,11 +3,9 @@ import os
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QColor, QPixmap, QIcon, QAction
 from View.components import *
-
-
 class ProductManagementTab(QWidget):
     add_product_signal = pyqtSignal(str, float, int)
-    delete_product_signal = pyqtSignal(str)  # FIXED: was pyqtSignal(int) — product_id is "PR#####"
+    delete_product_signal = pyqtSignal(str)
     search_products_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -19,7 +17,6 @@ class ProductManagementTab(QWidget):
         main_layout.setContentsMargins(25, 25, 25, 25)
         main_layout.setSpacing(20)
 
-        # Left side
         product_frame = CardFrame()
         product_layout = QVBoxLayout(product_frame)
         product_layout.setContentsMargins(20, 25, 20, 25)
@@ -28,7 +25,6 @@ class ProductManagementTab(QWidget):
         product_layout.addWidget(SectionLabel("Add New Product"))
         product_layout.addWidget(SubtitleLabel("Fill in the details below"))
 
-        # Form fields
         product_layout.addWidget(FieldLabel("Product Name"))
         self.product_name = StyledInput("Enter product name")
         product_layout.addWidget(self.product_name)
@@ -63,7 +59,6 @@ class ProductManagementTab(QWidget):
         product_layout.addWidget(add_btn)
         product_layout.addStretch()
 
-        # Right side
         view_frame = CardFrame()
         view_layout = QVBoxLayout(view_frame)
         view_layout.setContentsMargins(25, 25, 25, 25)
@@ -72,7 +67,6 @@ class ProductManagementTab(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setSpacing(16)
 
-        #  Product Logo
         logo_label = QLabel()
         icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "productLogo.svg")
         pixmap = QPixmap(icon_path)
@@ -87,16 +81,13 @@ class ProductManagementTab(QWidget):
         header_layout.addStretch()
         view_layout.addLayout(header_layout)
 
-        # Search input with icon inside
         self.search_input = SearchInput("Search products by name...")
 
-        # Add search icon INSIDE the input field
         search_icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "searchIcon.svg")
         search_icon = QIcon(search_icon_path)
         search_action = QAction(search_icon, "", self.search_input)
         self.search_input.addAction(search_action, QLineEdit.ActionPosition.LeadingPosition)
 
-        # Connect search signal
         self.search_input.textChanged.connect(
             lambda: self.search_products_signal.emit(self.search_input.text()))
         view_layout.addWidget(self.search_input)
@@ -107,6 +98,21 @@ class ProductManagementTab(QWidget):
 
         main_layout.addWidget(product_frame, 25)
         main_layout.addWidget(view_frame, 75)
+
+    def show_error(self, title, message):
+        QMessageBox.warning(self, title, message)
+
+    def show_info(self, title, message):
+        QMessageBox.information(self, title, message)
+
+    def show_question(self, title, message):
+        reply = QMessageBox.question(
+            self,
+            title,
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        return reply == QMessageBox.StandardButton.Yes
 
     def on_add_product(self):
         name = self.product_name.text().strip()
@@ -126,34 +132,29 @@ class ProductManagementTab(QWidget):
     def update_products_table(self, products):
         self.products_table.setRowCount(len(products))
         for i, product in enumerate(products):
-            # ID
             id_item = QTableWidgetItem(str(product.product_id))
             id_item.setForeground(QColor("#2c3e50"))
             id_item.setFont(QFont("Poppins", 10, QFont.Weight.Medium))
             id_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.products_table.setItem(i, 0, id_item)
 
-            # Name
             name_item = QTableWidgetItem(product.name)
             name_item.setForeground(QColor("#2c3e50"))
             name_item.setFont(QFont("Poppins", 10))
             self.products_table.setItem(i, 1, name_item)
 
-            # Price
             price_item = QTableWidgetItem(f"₱{product.price:,.2f}")
             price_item.setForeground(QColor("#006D77"))
             price_item.setFont(QFont("Poppins", 10, QFont.Weight.Bold))
             price_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.products_table.setItem(i, 2, price_item)
 
-            # Stock
             stock_item = QTableWidgetItem(str(product.stock))
             stock_item.setForeground(QColor("#2c3e50"))
             stock_item.setFont(QFont("Poppins", 10))
             stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.products_table.setItem(i, 3, stock_item)
 
-            # Delete button
             delete_btn = DeleteButton()
             delete_btn.clicked.connect(lambda checked, pid=product.product_id: self.delete_product_signal.emit(pid))
 

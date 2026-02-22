@@ -1,8 +1,6 @@
 import logging
 from Model.cart import CartItem
-
 logger = logging.getLogger(__name__)
-
 
 class CartOperations:
     def add_to_cart(self, product, quantity):

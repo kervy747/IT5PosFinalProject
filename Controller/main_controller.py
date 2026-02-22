@@ -1,7 +1,3 @@
-from PyQt6.QtWidgets import QMainWindow, QStackedWidget
-from PyQt6.QtGui import QPalette, QColor
-from View.colors import *
-from View.adminTabbedView import AdminTabbedView
 from .auth_controller import AuthController
 from .user_controller import UserController
 from .product_controller import ProductController
@@ -9,39 +5,24 @@ from .pos_controller import POSOperationsController
 from .transaction_controller import TransactionController
 
 class POSController:
-    def __init__(self, model, login_view, pos_view):
+    def __init__(self, model, login_view, pos_view, admin_tabbed_view, main_window, stack):
         self.model = model
-
-        # Initialize main window
-        self.main_window = QMainWindow()
-        self.main_window.setWindowTitle("POS System")
-        self.main_window.setGeometry(100, 100, 1200, 700)
-
-        # Set color scheme
-        palette = QPalette()
-        palette.setColor(QPalette.ColorRole.Window, QColor(BACKGROUND))
-        self.main_window.setPalette(palette)
-
-        # Store views
+        self.main_window = main_window
+        self.stack = stack
         self.login_view = login_view
         self.pos_view = pos_view
-        self.admin_tabbed_view = AdminTabbedView(self.model)
+        self.admin_tabbed_view = admin_tabbed_view
 
-        # Setup stack widget with all views
-        self.stack = QStackedWidget()
         self.stack.addWidget(self.login_view)
         self.stack.addWidget(self.admin_tabbed_view)
         self.stack.addWidget(self.pos_view)
-        self.main_window.setCentralWidget(self.stack)
 
-        # Initialize sub-controllers
         self.auth = AuthController(self)
         self.user = UserController(self)
         self.product = ProductController(self)
         self.pos_ops = POSOperationsController(self)
         self.transaction = TransactionController(self)
 
-        # Connect all signals
         self._connect_signals()
 
     def _connect_signals(self):
@@ -68,7 +49,6 @@ class POSController:
     def show_admin_dashboard(self):
         self.admin_tabbed_view.update_overview()
 
-        # Get current username from auth controller (NEW!)
         current_username = self.auth.get_current_username()
 
         self.admin_tabbed_view.update_users_table(
@@ -78,10 +58,8 @@ class POSController:
         self.admin_tabbed_view.update_products_table(self.model.products)
         self.admin_tabbed_view.update_transactions_table(self.model.transactions)
 
-        # Show overview tab by default
         self.admin_tabbed_view.tab_widget.setCurrentIndex(0)
 
-        # Switch to admin dashboard view
         self.stack.setCurrentWidget(self.admin_tabbed_view)
 
     def show_pos_view(self):

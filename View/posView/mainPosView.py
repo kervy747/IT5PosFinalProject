@@ -1,10 +1,8 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
-from PyQt6.QtCore import *
 from View.components import *
 from View.posView.cartView import cartView
 import os
-
 
 class mainPosView(QWidget):
     add_to_cart_signal = pyqtSignal(str, int)
@@ -152,6 +150,39 @@ class mainPosView(QWidget):
 
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
+
+    def show_error(self, title, message):
+        QMessageBox.warning(self, title, message)
+
+    def show_info(self, title, message):
+        QMessageBox.information(self, title, message)
+
+    def show_question(self, title, message):
+        reply = QMessageBox.question(
+            self,
+            title,
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
+        )
+        return reply == QMessageBox.StandardButton.Yes
+
+    def show_sale_complete(self, order_id, total, cash_amount, change, filepath):
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setWindowTitle("Sale Completed")
+        msg.setText(
+            f"Sale completed successfully!\n\n"
+            f"Order ID: {order_id}\n"
+            f"Total: ₱{total:,.2f}\n"
+            f"Cash: ₱{cash_amount:,.2f}\n"
+            f"Change: ₱{change:,.2f}\n\n"
+            f"Receipt saved to:\n{filepath}"
+        )
+        open_btn = msg.addButton("Open Receipt", QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+        msg.exec()
+        return msg.clickedButton() == open_btn
 
     def filter_products(self):
         search_text = self.search_input.text().strip().lower()

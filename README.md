@@ -16,7 +16,13 @@ IT5FinalProject/
 ├── Model/
 │   ├── __init__.py
 │   ├── cart.py
-│   ├── data_model.py
+│   ├── data_model/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── cart_operations.py
+│   │   ├── product_operations.py
+│   │   ├── transaction_operations.py
+│   │   └── user_operations.py
 │   ├── product.py
 │   ├── transaction.py
 │   └── user.py
@@ -46,6 +52,3 @@ IT5FinalProject/
 └── receipt_generator.py
 ```
 
-## Description
-
-This is a Python-based Point of Sale (POS) system built with an MVC (Model-View-Controller) architecture pattern.

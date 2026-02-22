@@ -1,14 +1,12 @@
 import os
-
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QColor, QFont, QPixmap, QIcon, QAction
+from PyQt6.QtGui import QColor, QPixmap, QIcon, QAction
 from View.components import *
-
 
 class UserManagementTab(QWidget):
     add_user_signal = pyqtSignal(str, str, str)
-    delete_user_signal = pyqtSignal(str)  # Now means "deactivate"
-    reactivate_user_signal = pyqtSignal(str)  # NEW
+    delete_user_signal = pyqtSignal(str)
+    reactivate_user_signal = pyqtSignal(str)
     search_users_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -20,7 +18,6 @@ class UserManagementTab(QWidget):
         main_layout.setContentsMargins(25, 25, 25, 25)
         main_layout.setSpacing(20)
 
-        # Left side
         user_frame = CardFrame()
         user_layout = QVBoxLayout(user_frame)
         user_layout.setContentsMargins(20, 25, 20, 25)
@@ -29,7 +26,6 @@ class UserManagementTab(QWidget):
         user_layout.addWidget(SectionLabel("Add New User"))
         user_layout.addWidget(SubtitleLabel("Create a new user account"))
 
-        # Form fields
         user_layout.addWidget(FieldLabel("Username"))
         self.new_username = StyledInput("Enter username")
         user_layout.addWidget(self.new_username)
@@ -49,7 +45,6 @@ class UserManagementTab(QWidget):
         user_layout.addWidget(add_btn)
         user_layout.addStretch()
 
-        # Right side
         view_frame = CardFrame()
         view_layout = QVBoxLayout(view_frame)
         view_layout.setContentsMargins(25, 25, 25, 25)
@@ -58,7 +53,6 @@ class UserManagementTab(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setSpacing(16)
 
-        # Logo
         logo_label = QLabel()
         icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "userLogo.svg")
         pixmap = QPixmap(icon_path)
@@ -73,16 +67,13 @@ class UserManagementTab(QWidget):
         header_layout.addStretch()
         view_layout.addLayout(header_layout)
 
-        # Search input with icon inside
         self.search_input = SearchInput("Search users by username...")
 
-        # Add search icon INSIDE the input field
         search_icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "searchIcon.svg")
         search_icon = QIcon(search_icon_path)
         search_action = QAction(search_icon, "", self.search_input)
         self.search_input.addAction(search_action, QLineEdit.ActionPosition.LeadingPosition)
 
-        # Connect search signal
         self.search_input.textChanged.connect(
             lambda: self.search_users_signal.emit(self.search_input.text()))
         view_layout.addWidget(self.search_input)
@@ -93,6 +84,21 @@ class UserManagementTab(QWidget):
 
         main_layout.addWidget(user_frame, 25)
         main_layout.addWidget(view_frame, 75)
+
+    def show_error(self, title, message):
+        QMessageBox.warning(self, title, message)
+
+    def show_info(self, title, message):
+        QMessageBox.information(self, title, message)
+
+    def show_question(self, title, message):
+        reply = QMessageBox.question(
+            self,
+            title,
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        return reply == QMessageBox.StandardButton.Yes
 
     def on_add_user(self):
         username = self.new_username.text().strip()
@@ -112,7 +118,6 @@ class UserManagementTab(QWidget):
             is_current_user = (current_username and user.username == current_username)
             is_inactive = (user.active == 0)
 
-            # Username — append status labels
             if is_current_user:
                 display_name = f"{user.username} (You)"
             elif is_inactive:
@@ -122,22 +127,20 @@ class UserManagementTab(QWidget):
 
             username_item = QTableWidgetItem(display_name)
 
-            # Color coding based on status
             if is_inactive:
-                username_item.setForeground(QColor("#999999"))  # Gray for inactive
+                username_item.setForeground(QColor("#999999"))
             elif is_current_user:
-                username_item.setForeground(QColor("#006D77"))  # Teal for current user
+                username_item.setForeground(QColor("#006D77"))
             else:
-                username_item.setForeground(QColor("#2c3e50"))  # Dark for active users
+                username_item.setForeground(QColor("#2c3e50"))
 
             username_item.setFont(QFont("Poppins", 10,
                                         QFont.Weight.Bold if is_current_user else QFont.Weight.Medium))
             self.users_table.setItem(i, 0, username_item)
 
-            # Role
             role_item = QTableWidgetItem(user.role.upper())
             if is_inactive:
-                role_item.setForeground(QColor("#999999"))  # Gray for inactive
+                role_item.setForeground(QColor("#999999"))
             elif user.role == "admin":
                 role_item.setForeground(QColor("#006D77"))
             else:
@@ -146,14 +149,12 @@ class UserManagementTab(QWidget):
             role_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.users_table.setItem(i, 1, role_item)
 
-            # Action button — disabled for current user, reactivate for inactive, deactivate for active
             btn_container = QWidget()
             btn_layout = QHBoxLayout(btn_container)
             btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
             btn_layout.setContentsMargins(5, 5, 5, 5)
 
             if is_current_user:
-                # Greyed-out disabled button for current user
                 disabled_btn = QPushButton("You")
                 disabled_btn.setEnabled(False)
                 disabled_btn.setMinimumHeight(40)
@@ -172,13 +173,11 @@ class UserManagementTab(QWidget):
                 """)
                 btn_layout.addWidget(disabled_btn)
             elif is_inactive:
-                # Reactivate button for inactive users
                 reactivate_btn = ReactivateButton()
                 reactivate_btn.clicked.connect(
                     lambda checked, u=user.username: self.reactivate_user_signal.emit(u))
                 btn_layout.addWidget(reactivate_btn)
             else:
-                # Deactivate button for active users (not current user)
                 delete_btn = DeleteButton("Deactivate")
                 delete_btn.clicked.connect(
                     lambda checked, u=user.username: self.delete_user_signal.emit(u))

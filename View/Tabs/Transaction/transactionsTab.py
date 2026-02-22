@@ -67,6 +67,22 @@ class TransactionsTab(QWidget):
 
         layout.addWidget(main_card)
 
+    def show_error(self, title, message):
+        QMessageBox.warning(self, title, message)
+
+    def show_info(self, title, message):
+        QMessageBox.information(self, title, message)
+
+    def show_question(self, title, message):
+        reply = QMessageBox.question(
+            self,
+            title,
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        return reply == QMessageBox.StandardButton.Yes
+
     def show_transaction_details(self, transaction):
         dialog = TransactionDetailsDialog(transaction, self)
         dialog.exec()
