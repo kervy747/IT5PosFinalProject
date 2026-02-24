@@ -1,4 +1,6 @@
 import bcrypt
+import logging
+logger = logging.getLogger(__name__)
 
 class User:
     def __init__(self, username, password, role, active=1):
@@ -50,6 +52,13 @@ class User:
     def create_with_hashed_password(username, plain_password, role):
         hashed_password = bcrypt.hashpw(plain_password.encode('utf-8'), bcrypt.gensalt())
         return User(username, hashed_password.decode('utf-8'), role, active=1)
+
+    def authenticate(self, password):
+        if self.verify_password(password):
+            logger.info(f"User '{self.username}' authenticated successfully")
+            return True
+        logger.warning(f"Authentication failed for user '{self.username}'")
+        return False
 
     def __repr__(self):
         status = "Active" if self.is_active() else "Inactive"

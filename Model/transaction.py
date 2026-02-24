@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class Transaction:
     def __init__(self, order_id, staff_name, items, total_amount, date):
         self.order_id = order_id
@@ -6,6 +11,16 @@ class Transaction:
         self.total_amount = total_amount
         self.date = date
         self.user_id = None
+
+    def get_total_items(self):
+        return sum(item['quantity'] for item in self.items)
+
+    def get_item_ids(self):
+        return [item['product_id'] for item in self.items]
+
+    def matches_search(self, search_term):
+        search_lower = search_term.lower()
+        return search_lower in self.order_id.lower() or search_lower in self.staff_name.lower()
 
     def to_dict(self):
         return {
@@ -28,12 +43,6 @@ class Transaction:
         )
         transaction.user_id = data.get('user_id')
         return transaction
-
-    def get_total_items(self):
-        return sum(item['quantity'] for item in self.items)
-
-    def get_item_ids(self):
-        return [item['product_id'] for item in self.items]
 
     def __repr__(self):
         return f"Transaction({self.order_id}, User ID: {self.user_id}, Staff: {self.staff_name}, Total: {self.total_amount:.2f})"

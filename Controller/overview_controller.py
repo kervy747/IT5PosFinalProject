@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 class OverviewController:
     def __init__(self, data_model):
-         self.data_model = data_model
+        self.data_model = data_model
 
     def get_dashboard_data(self, selected_month=None, selected_year=None):
         transactions = self.data_model.transactions
@@ -36,36 +37,32 @@ class OverviewController:
 
     def _calculate_revenue_metrics(self, transactions, selected_month, selected_year):
         now = datetime.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today = now.date()
 
-        # Start of selected month
-        month_start = datetime(selected_year, selected_month, 1, 0, 0, 0)
-
-        # End of selected month
+        month_start = datetime(selected_year, selected_month, 1)
         if selected_month == 12:
-            month_end = datetime(selected_year + 1, 1, 1, 0, 0, 0)
+            month_end = datetime(selected_year + 1, 1, 1)
         else:
-            month_end = datetime(selected_year, selected_month + 1, 1, 0, 0, 0)
+            month_end = datetime(selected_year, selected_month + 1, 1)
 
         today_revenue = 0
         monthly_revenue = 0
         monthly_transactions = 0
-        total_transactions = len(transactions)
 
         for transaction in transactions:
             trans_date = self._get_transaction_date(transaction)
+            if not trans_date:
+                continue
 
-            if trans_date:
-                # Today's revenue (only for current date)
-                if trans_date >= today_start and trans_date.date() == now.date():
-                    today_revenue += transaction.total_amount
+            # Today's revenue — match only transactions from today's date
+            if trans_date.date() == today:
+                today_revenue += transaction.total_amount
 
-                # Monthly revenue (for selected month)
-                if month_start <= trans_date < month_end:
-                    monthly_revenue += transaction.total_amount
-                    monthly_transactions += 1
+            # Monthly revenue — match only transactions within selected month
+            if month_start <= trans_date < month_end:
+                monthly_revenue += transaction.total_amount
+                monthly_transactions += 1
 
-        # Calculate average transaction for selected month
         avg_transaction = (
             monthly_revenue / monthly_transactions
             if monthly_transactions > 0
@@ -75,7 +72,7 @@ class OverviewController:
         return {
             'today_revenue': today_revenue,
             'monthly_revenue': monthly_revenue,
-            'total_transactions': total_transactions,
+            'total_transactions': len(transactions),
             'monthly_transactions': monthly_transactions,
             'avg_transaction': avg_transaction
         }
@@ -92,25 +89,21 @@ class OverviewController:
         return None
 
     def _calculate_top_products(self, transactions, selected_month, selected_year, limit=5):
-        # Start and end of selected month
-        month_start = datetime(selected_year, selected_month, 1, 0, 0, 0)
-
+        month_start = datetime(selected_year, selected_month, 1)
         if selected_month == 12:
-            month_end = datetime(selected_year + 1, 1, 1, 0, 0, 0)
+            month_end = datetime(selected_year + 1, 1, 1)
         else:
-            month_end = datetime(selected_year, selected_month + 1, 1, 0, 0, 0)
+            month_end = datetime(selected_year, selected_month + 1, 1)
 
         product_data = {}
 
         for transaction in transactions:
             trans_date = self._get_transaction_date(transaction)
 
-            # Only include transactions from selected month
             if not trans_date or not (month_start <= trans_date < month_end):
                 continue
 
             for item in transaction.items:
-                # Handle both dict and object item formats
                 if isinstance(item, dict):
                     product_name = item.get('product_name', 'Unknown')
                     quantity = item.get('quantity', 0)
@@ -120,7 +113,6 @@ class OverviewController:
                     quantity = getattr(item, 'quantity', 0)
                     price = getattr(item, 'price', 0)
 
-                # Aggregate product data
                 if product_name not in product_data:
                     product_data[product_name] = {'quantity': 0, 'revenue': 0}
 
@@ -154,7 +146,6 @@ class OverviewController:
     def _get_stock_alerts(self, products):
         alerts = []
 
-        # Get products sorted by stock level
         low_stock = sorted(
             [p for p in products if 0 < p.stock <= 10],
             key=lambda p: p.stock
@@ -165,7 +156,6 @@ class OverviewController:
             key=lambda p: p.name
         )
 
-        # Add out of stock alerts (critical)
         for product in out_of_stock:
             alerts.append({
                 'type': 'critical',
@@ -173,7 +163,6 @@ class OverviewController:
                 'message': f"{product.name} - OUT OF STOCK"
             })
 
-        # Add low stock alerts (warning)
         for product in low_stock:
             alerts.append({
                 'type': 'warning',
@@ -181,7 +170,6 @@ class OverviewController:
                 'message': f"{product.name} - {product.stock} units left"
             })
 
-        # Add success message if no alerts
         if not alerts:
             alerts.append({
                 'type': 'success',
@@ -197,9 +185,10 @@ class OverviewController:
 
         daily_revenue = {}
 
+        # Fixed: use timedelta instead of day.replace(day=day.day - i)
+        # which would crash when crossing month boundaries (e.g. March 1 - 1 day)
         for i in range(days):
-            day = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            day = day.replace(day=day.day - i)
+            day = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
             daily_revenue[day.strftime("%Y-%m-%d")] = 0
 
         for transaction in transactions:
@@ -208,6 +197,7 @@ class OverviewController:
                 date_key = trans_date.strftime("%Y-%m-%d")
                 if date_key in daily_revenue:
                     daily_revenue[date_key] += transaction.total_amount
+
         return daily_revenue
 
     def get_product_performance(self, product_name):
@@ -219,7 +209,6 @@ class OverviewController:
 
         for transaction in transactions:
             for item in transaction.items:
-                # Handle both dict and object item formats
                 if isinstance(item, dict):
                     name = item.get('product_name', '')
                     quantity = item.get('quantity', 0)
