@@ -2,6 +2,8 @@ from datetime import datetime
 import os
 
 class ReceiptGenerator:
+    TAX_RATE = 0.10  # 10% tax
+
     def __init__(self, receipt_folder="receipts"):
         self.receipt_folder = receipt_folder
         self._ensure_receipt_folder_exists()
@@ -16,10 +18,17 @@ class ReceiptGenerator:
             if transaction_date is None:
                 transaction_date = datetime.now().strftime("%m-%d-%Y %I:%M %p")
 
+            # Calculate tax and grand total
+            tax_amount = total_amount * self.TAX_RATE
+            grand_total = total_amount + tax_amount
+
+            # Recalculate change based on grand total
+            change_amount = cash_amount - grand_total
+
             # Generate receipt content
             receipt_text = self._format_receipt(
                 order_id, staff_name, cart_items, total_amount,
-                cash_amount, change_amount, transaction_date
+                tax_amount, grand_total, cash_amount, change_amount, transaction_date
             )
 
             # Generate filename
@@ -41,7 +50,7 @@ class ReceiptGenerator:
             traceback.print_exc()
             return False, error_msg
 
-    def _format_receipt(self, order_id, staff_name, cart_items, total_amount, cash_amount, change_amount, transaction_date):
+    def _format_receipt(self, order_id, staff_name, cart_items, total_amount, tax_amount, grand_total, cash_amount, change_amount, transaction_date):
         # Dynamically calculate name column based on longest product name
         longest_name = max((len(item.product.name) for item in cart_items), default=20)
         name_col = max(longest_name + 2, 22)  # at least 22, or longest name + 2 padding
@@ -83,7 +92,8 @@ class ReceiptGenerator:
 
         # Totals
         lines.append(self._right_align(f"SUBTOTAL: ₱{total_amount:,.2f}", width))
-        lines.append(self._right_align(f"TOTAL:    ₱{total_amount:,.2f}", width))
+        lines.append(self._right_align(f"TAX (10%): ₱{tax_amount:,.2f}", width))
+        lines.append(self._right_align(f"TOTAL:    ₱{grand_total:,.2f}", width))
         lines.append("")
         lines.append(self._right_align(f"CASH:     ₱{cash_amount:,.2f}", width))
         lines.append(self._right_align(f"CHANGE:   ₱{change_amount:,.2f}", width))
@@ -107,7 +117,6 @@ class ReceiptGenerator:
         return text.rjust(width)
 
     def _format_line(self, col1, col2, col3, col4, width):
-        # Column widths: Item(20), Qty(5), Price(10), Total(10)
         return f"{col1:<20} {col2:>5} {col3:>10} {col4:>10}"
 
     def _format_item_line(self, name, qty, price, total, width):

@@ -30,5 +30,6 @@ if __name__ == "__main__":
 
     controller = POSController(model, login_view, pos_view, admin_tabbed_view, main_window, stack)
 
+    main_window.showMaximized()
     controller.run()
     sys.exit(app.exec())

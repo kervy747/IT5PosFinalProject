@@ -1,8 +1,10 @@
+from datetime import datetime
 from .auth_controller import AuthController
 from .user_controller import UserController
 from .product_controller import ProductController
 from .pos_controller import POSOperationsController
 from .transaction_controller import TransactionController
+
 
 class POSController:
     def __init__(self, model, login_view, pos_view, admin_tabbed_view, main_window, stack):
@@ -22,6 +24,10 @@ class POSController:
         self.product = ProductController(self)
         self.pos_ops = POSOperationsController(self)
         self.transaction = TransactionController(self)
+
+        self.user.load_users()
+        self.product.load_products()
+        self.transaction.load_transactions()
 
         self._connect_signals()
 
@@ -56,7 +62,10 @@ class POSController:
             current_username
         )
         self.admin_tabbed_view.update_products_table(self.model.products)
-        self.admin_tabbed_view.update_transactions_table(self.model.transactions)
+
+        now = datetime.now()
+        filtered = self.transaction._filter_by_month(self.model.transactions, now.month, now.year)
+        self.admin_tabbed_view.update_transactions_table(filtered)
 
         self.admin_tabbed_view.tab_widget.setCurrentIndex(0)
 

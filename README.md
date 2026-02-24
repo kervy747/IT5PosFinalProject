@@ -37,6 +37,8 @@ IT5FinalProject/
 │   │   ├── Overview/
 │   │   │   ├── __init__.py
 │   │   │   ├── overviewTab.py
+│   │   │   ├── barChartWidget.py
+│   │   │   ├── lineChartWidget.py
 │   │   │   ├── statCard.py
 │   │   │   └── topProductCard.py
 │   │   └── Transaction/
@@ -49,6 +51,7 @@ IT5FinalProject/
 │   ├── components.py
 │   └── loginView.py
 ├── mainWindow.py
-└── receipt_generator.py
+├── receipt_generator.py
+└── report_generator.py
 ```
 

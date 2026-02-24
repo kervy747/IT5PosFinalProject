@@ -4,23 +4,21 @@ logger = logging.getLogger(__name__)
 
 class CartOperations:
     def add_to_cart(self, product, quantity):
-        # Check stock availability
         if not product.has_sufficient_stock(quantity):
             logger.warning(
                 f"Insufficient stock for product '{product.name}' (requested: {quantity}, available: {product.stock})")
             return False
 
-        # Check if product already in cart
         for item in self.cart:
             if item.product.product_id == product.product_id:
-                # Update existing cart item
-                if not product.has_sufficient_stock(quantity):
+                new_quantity = item.quantity + quantity
+                if not product.has_sufficient_stock(new_quantity):
+                    logger.warning(
+                        f"Insufficient stock for product '{product.name}' (cart + requested: {new_quantity}, available: {product.stock})")
                     return False
-                item.quantity = quantity
-                logger.info(f"Updated cart: {product.name} quantity set to {quantity}")
+                item.quantity = new_quantity
                 return True
 
-        # Add new item to cart
         self.cart.append(CartItem(product, quantity))
         logger.info(f"Added to cart: {product.name} x {quantity}")
         return True
