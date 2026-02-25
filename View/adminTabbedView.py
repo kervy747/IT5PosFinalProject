@@ -148,6 +148,11 @@ class AdminTabbedView(QWidget):
         self.transactions_tab.search_transactions_signal.connect(self.search_transactions_signal.emit)
         self.transactions_tab.filter_by_month_signal.connect(self.filter_by_month_signal.emit)
 
+        # ── Wire Overview → Transactions navigation ──────────────────
+        self.overview_tab.navigate_to_transactions.connect(
+            lambda: self.tab_widget.setCurrentIndex(1)
+        )
+
     def update_overview(self):
         self.overview_tab.update_overview()
 

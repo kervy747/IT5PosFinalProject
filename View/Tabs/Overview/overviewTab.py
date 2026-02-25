@@ -2,15 +2,56 @@ import os
 import subprocess
 import platform
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QFont, QCursor
+from PyQt6.QtCore import Qt, pyqtSignal
 from View.components import *
 from .topProductCard import TopProductCard
 from .barChartWidget import BarChartWidget
 from .lineChartWidget import LineChartWidget
+from .todayRevenueDialog import TodayRevenueDialog
+from .avgTransactionDialog import AvgTransactionDialog
 from report_generator import ReportGenerator
 
 
+# ── Clickable wrapper ─────────────────────────────────────────────────────────
+
+class _ClickableCard(QFrame):
+    """A QFrame that emits `clicked` when the user presses it."""
+    clicked = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+    def enterEvent(self, event):
+        # Lighten slightly on hover
+        current = self.styleSheet()
+        self.setStyleSheet(current.replace(
+            "background-color: white;", "background-color: #F0FAFB;"
+        ).replace(
+            "background-color: #FFFFFF;", "background-color: #F0FAFB;"
+        ))
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        current = self.styleSheet()
+        self.setStyleSheet(current.replace(
+            "background-color: #F0FAFB;", "background-color: #FFFFFF;"
+        ))
+        super().leaveEvent(event)
+
+
+# ── Main tab ──────────────────────────────────────────────────────────────────
+
 class OverviewTab(QWidget):
+    # Emit this to ask the main window / tabbed view to switch to the Transactions tab.
+    navigate_to_transactions = pyqtSignal()
+
     def __init__(self, overview_controller):
         super().__init__()
         self.controller = overview_controller
@@ -25,6 +66,7 @@ class OverviewTab(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(14)
 
+        # ── Header ────────────────────────────────────────────────────
         header_layout = QHBoxLayout()
         header_layout.setSpacing(12)
 
@@ -61,24 +103,31 @@ class OverviewTab(QWidget):
                 padding: 0 16px;
                 border: none;
             }}
-            QPushButton:hover {{
-                background-color: #005f68;
-            }}
-            QPushButton:pressed {{
-                background-color: #004f57;
-            }}
+            QPushButton:hover {{ background-color: #005f68; }}
+            QPushButton:pressed {{ background-color: #004f57; }}
         """)
         export_btn.clicked.connect(self.export_pdf)
         header_layout.addWidget(export_btn)
 
         main_layout.addLayout(header_layout)
 
+        # ── Stat cards ────────────────────────────────────────────────
         stats_layout = QHBoxLayout()
         stats_layout.setSpacing(12)
 
-        self.revenue_card = self._create_compact_stat("Today's Revenue", "₱0.00", "💰", PRIMARY)
-        self.monthly_card = self._create_compact_stat("Monthly Sales", "₱0.00", "📊", "#00897B")
-        self.avg_card = self._create_compact_stat("Avg. Transaction", "₱0.00", "💳", "#7B1FA2")
+        self.revenue_card  = self._create_compact_stat("Today's Revenue",   "₱0.00", "💰", PRIMARY)
+        self.monthly_card  = self._create_compact_stat("Monthly Sales",     "₱0.00", "📊", "#00897B")
+        self.avg_card      = self._create_compact_stat("Avg. Transaction",  "₱0.00", "💳", "#7B1FA2")
+
+        # Wire up clicks
+        self.revenue_card[0].clicked.connect(self._open_today_revenue_dialog)
+        self.monthly_card[0].clicked.connect(self._navigate_to_transactions)
+        self.avg_card[0].clicked.connect(self._open_avg_transaction_dialog)
+
+        # Tooltip hints
+        self.revenue_card[0].setToolTip("Click to view today's transactions")
+        self.monthly_card[0].setToolTip("Click to go to Transactions tab")
+        self.avg_card[0].setToolTip("Click to view transaction breakdown")
 
         stats_layout.addWidget(self.revenue_card[0])
         stats_layout.addWidget(self.monthly_card[0])
@@ -86,6 +135,7 @@ class OverviewTab(QWidget):
 
         main_layout.addLayout(stats_layout)
 
+        # ── Charts ────────────────────────────────────────────────────
         charts_layout = QHBoxLayout()
         charts_layout.setSpacing(14)
 
@@ -119,9 +169,11 @@ class OverviewTab(QWidget):
 
         main_layout.addLayout(charts_layout, 1)
 
+        # ── Bottom content row ────────────────────────────────────────
         content_layout = QHBoxLayout()
         content_layout.setSpacing(14)
 
+        # Top products
         products_container = CardFrame()
         products_layout = QVBoxLayout(products_container)
         products_layout.setContentsMargins(16, 14, 16, 14)
@@ -154,6 +206,7 @@ class OverviewTab(QWidget):
         products_layout.addWidget(scroll)
         content_layout.addWidget(products_container, 1)
 
+        # Inventory
         inventory_container = CardFrame()
         inventory_layout = QVBoxLayout(inventory_container)
         inventory_layout.setContentsMargins(16, 14, 16, 14)
@@ -175,18 +228,18 @@ class OverviewTab(QWidget):
         inv_grid.setRowStretch(1, 1)
 
         self.total_products_widget = self._create_mini_stat("Total Products", "0", "#10B981")
-        self.total_stock_widget = self._create_mini_stat("Total Stock", "0", PRIMARY)
-        self.low_stock_widget = self._create_mini_stat("Low Stock", "0", "#F59E0B")
-        self.out_stock_widget = self._create_mini_stat("Out of Stock", "0", "#EF4444")
+        self.total_stock_widget    = self._create_mini_stat("Total Stock",     "0", PRIMARY)
+        self.low_stock_widget      = self._create_mini_stat("Low Stock",       "0", "#F59E0B")
+        self.out_stock_widget      = self._create_mini_stat("Out of Stock",    "0", "#EF4444")
 
         for widget in [self.total_products_widget, self.total_stock_widget,
                        self.low_stock_widget, self.out_stock_widget]:
             widget.setFixedHeight(75)
 
         inv_grid.addWidget(self.total_products_widget, 0, 0)
-        inv_grid.addWidget(self.total_stock_widget, 0, 1)
-        inv_grid.addWidget(self.low_stock_widget, 1, 0)
-        inv_grid.addWidget(self.out_stock_widget, 1, 1)
+        inv_grid.addWidget(self.total_stock_widget,    0, 1)
+        inv_grid.addWidget(self.low_stock_widget,      1, 0)
+        inv_grid.addWidget(self.out_stock_widget,      1, 1)
 
         inv_panels_layout.addLayout(inv_grid, 1)
 
@@ -227,8 +280,11 @@ class OverviewTab(QWidget):
         content_layout.addWidget(inventory_container, 1)
         main_layout.addLayout(content_layout, 1)
 
+    # ── Card factories ────────────────────────────────────────────────────────
+
     def _create_compact_stat(self, label, value, icon, color):
-        container = QFrame()
+        """Returns (container: _ClickableCard, value_label: QLabel)."""
+        container = _ClickableCard()
         container.setStyleSheet(f"""
             QFrame {{
                 background-color: {WHITE};
@@ -262,7 +318,13 @@ class OverviewTab(QWidget):
         text_layout.addWidget(value_label)
 
         layout.addLayout(text_layout)
+
+        # Small "click" hint
+        hint = QLabel("↗")
+        hint.setFont(QFont("Poppins", 11))
+        hint.setStyleSheet("color: #CBD5E1; background: transparent;")
         layout.addStretch()
+        layout.addWidget(hint)
 
         return container, value_label
 
@@ -294,8 +356,34 @@ class OverviewTab(QWidget):
 
         return container
 
+    # ── Click handlers ────────────────────────────────────────────────────────
+
+    def _open_today_revenue_dialog(self):
+        all_transactions = self.controller.data_model.transactions
+        dlg = TodayRevenueDialog(all_transactions, parent=self)
+        dlg.exec()
+
+    def _navigate_to_transactions(self):
+        """Ask the parent view to switch to the Transactions tab."""
+        self.navigate_to_transactions.emit()
+
+    def _open_avg_transaction_dialog(self):
+        if not self._current_transactions and not self._current_month_name:
+            return
+        dlg = AvgTransactionDialog(
+            self._current_transactions,
+            self._current_month_name,
+            self._current_year,
+            parent=self
+        )
+        dlg.exec()
+
+    # ── Month selector ────────────────────────────────────────────────────────
+
     def on_month_changed(self, month, year):
         self.update_overview(month, year)
+
+    # ── Update helpers ────────────────────────────────────────────────────────
 
     def update_overview(self, selected_month=None, selected_year=None):
         try:
@@ -429,9 +517,9 @@ class OverviewTab(QWidget):
 
     def _update_inventory_stats(self, stats):
         self._update_mini_stat(self.total_products_widget, str(stats['total_products']))
-        self._update_mini_stat(self.total_stock_widget, str(stats['total_stock']))
-        self._update_mini_stat(self.low_stock_widget, str(stats['low_stock_count']))
-        self._update_mini_stat(self.out_stock_widget, str(stats['out_of_stock_count']))
+        self._update_mini_stat(self.total_stock_widget,    str(stats['total_stock']))
+        self._update_mini_stat(self.low_stock_widget,      str(stats['low_stock_count']))
+        self._update_mini_stat(self.out_stock_widget,      str(stats['out_of_stock_count']))
 
     def _update_stock_alerts(self, alerts):
         self.alert_list.clear()
