@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTableWidget, QTableWidgetItem,
-    QHeaderView, QFrame, QWidget
+    QHeaderView, QFrame
 )
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtCore import Qt

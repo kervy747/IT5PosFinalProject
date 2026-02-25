@@ -2,8 +2,7 @@ import os
 import subprocess
 import platform
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QPixmap, QFont, QCursor
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QPixmap, QCursor
 from View.components import *
 from .topProductCard import TopProductCard
 from .barChartWidget import BarChartWidget
@@ -16,7 +15,6 @@ from report_generator import ReportGenerator
 # ── Clickable wrapper ─────────────────────────────────────────────────────────
 
 class _ClickableCard(QFrame):
-    """A QFrame that emits `clicked` when the user presses it."""
     clicked = pyqtSignal()
 
     def __init__(self, *args, **kwargs):

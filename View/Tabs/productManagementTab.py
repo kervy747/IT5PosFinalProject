@@ -1,5 +1,4 @@
 import os
-
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QColor, QPixmap, QIcon, QAction
 from View.components import *

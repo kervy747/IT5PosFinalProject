@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QFont, QColor
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor
 from View.components import *
 from receipt_generator import ReceiptGenerator
 
