@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QPixmap
 from View.components import *
 
-
 class LoginView(QWidget):
     login_signal = pyqtSignal(str, str)
 
@@ -141,11 +140,9 @@ class LoginView(QWidget):
         self.password_input.clear()
 
     def show_error(self, title, message):
-        """Display error message to user"""
         QMessageBox.warning(self, title, message)
 
     def show_question(self, title, message):
-        """Display question dialog and return user's choice"""
         reply = QMessageBox.question(
             self,
             title,
