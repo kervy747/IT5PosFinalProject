@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class AuthController:
     def __init__(self, main_controller):
         self.main = main_controller
@@ -7,22 +12,24 @@ class AuthController:
         self.current_user = None
 
     def handle_login(self, username, password):
-        authenticated_user = self.model.authenticate(username, password)
+        user = self.model.find_user_by_username(username)
 
-        if authenticated_user:
-            self.current_user = authenticated_user
+        if user and user.verify_password(password):
+            logger.info(f"User '{username}' authenticated successfully")
+            self.current_user = user
 
-            if authenticated_user.is_admin():
+            if user.is_admin():
                 self.main.show_admin_dashboard()
-            elif authenticated_user.is_staff():
+            elif user.is_staff():
                 self.main.show_pos_view()
             else:
                 self.main.login_view.show_error(
                     "Error",
-                    f"Unknown user role: {authenticated_user.role}"
+                    f"Unknown user role: {user.role}"
                 )
                 self.current_user = None
         else:
+            logger.warning(f"Authentication failed for username '{username}'")
             self.main.login_view.show_error(
                 "Login Failed",
                 "Invalid username or password"

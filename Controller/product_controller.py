@@ -107,5 +107,9 @@ class ProductController:
             self.main.pos_view.update_products(self.model.products)
 
     def handle_search_products(self, search_term):
-        filtered_products = self.model.search_products(search_term)
+        if not search_term:
+            filtered_products = self.model.products
+        else:
+            filtered_products = [p for p in self.model.products if p.matches_search(search_term)]
+
         self.main.admin_tabbed_view.update_products_table(filtered_products)

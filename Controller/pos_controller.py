@@ -2,7 +2,9 @@ import logging
 from datetime import datetime
 from Controller.db import get_connection
 from receipt_generator import ReceiptGenerator
+
 logger = logging.getLogger(__name__)
+
 
 class POSOperationsController:
     def __init__(self, main_controller):
@@ -15,15 +17,29 @@ class POSOperationsController:
     def handle_add_to_cart(self, product_id, quantity):
         product = next((p for p in self.model.products if p.product_id == product_id), None)
 
-        if product:
-            if self.model.add_to_cart(product, quantity):
-                available_products = self._get_available_products()
-                self.main.pos_view.update_products(available_products)
-                self.main.pos_view.update_cart(self.model.cart, self.model.get_cart_total())
-            else:
-                self.main.pos_view.show_error("Error", "Insufficient stock")
-        else:
+        if not product:
             self.main.pos_view.show_error("Error", f"Product {product_id} not found")
+            return
+
+        # Check stock against quantity requested
+        if not product.has_sufficient_stock(quantity):
+            logger.warning(f"Insufficient stock for '{product.name}' (requested: {quantity}, available: {product.stock})")
+            self.main.pos_view.show_error("Error", "Insufficient stock")
+            return
+
+        existing = self.model.get_cart_item_by_product_id(product_id)
+        if existing and not product.has_sufficient_stock(existing.quantity + quantity):
+            logger.warning(f"Insufficient stock for '{product.name}' (cart + requested: {existing.quantity + quantity}, available: {product.stock})")
+            self.main.pos_view.show_error("Error", "Insufficient stock")
+            return
+
+        if existing:
+            self.model.update_cart_item_quantity(product_id, quantity)
+        else:
+            self.model.append_cart_item(product, quantity)
+        available_products = self._get_available_products()
+        self.main.pos_view.update_products(available_products)
+        self.main.pos_view.update_cart(self.model.cart, self.model.get_cart_total())
 
     def handle_remove_from_cart(self, index):
         self.model.remove_from_cart(index)

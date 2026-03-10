@@ -1,7 +1,9 @@
 import logging
 from Controller.db import get_connection
 from Model.user import User
+
 logger = logging.getLogger(__name__)
+
 
 class UserController:
     def __init__(self, main_controller):
@@ -129,7 +131,12 @@ class UserController:
                 self.main.admin_tabbed_view.user_mgmt_tab.show_error("Error", f"Error: {e}")
 
     def handle_search_users(self, search_term):
-        filtered_users = self.model.search_users(search_term)
+        if not search_term:
+            filtered_users = self.model.users
+        else:
+            search_lower = search_term.lower()
+            filtered_users = [u for u in self.model.users if search_lower in u.username.lower()]
+
         current_username = self.main.auth.get_current_username()
         self.main.admin_tabbed_view.update_users_table(filtered_users, current_username)
 

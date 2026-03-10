@@ -90,7 +90,11 @@ class TransactionController:
         return filtered
 
     def handle_search_transactions(self, search_term):
-        filtered_transactions = self.model.search_transactions(search_term)
+        if not search_term:
+            filtered_transactions = self.model.transactions
+        else:
+            filtered_transactions = [t for t in self.model.transactions if t.matches_search(search_term)]
+
         self.main.admin_tabbed_view.update_transactions_table(filtered_transactions)
 
     def handle_filter_by_month(self, month, year):
